@@ -33,7 +33,33 @@ Point::~Point()
 
 Point::PointClassification Point::classify(Point & p0, Point & p1)
 {
-	// XXXXX
+	// a = vector del segmento (p1 - p0)
+	// b = vector desde el origen del segmento hasta el punto actual (this - p0)
+	Point a(p1._x - p0._x, p1._y - p0._y);
+	Point b(_x - p0._x, _y - p0._y);
+
+	double sa = a._x * b._y - b._x * a._y;
+
+	if (sa > 0.0)
+		return PointClassification::LEFT;
+
+	if (sa < 0.0)
+		return PointClassification::RIGHT;
+
+	// Si sa == 0
+
+	if ((a._x * b._x < 0.0) || (a._y * b._y < 0.0))
+		return PointClassification::BACKWARD;
+
+	if (b.getModule() > a.getModule())
+		return PointClassification::FORWARD;
+
+	if (_x == p0._x && _y == p0._y)
+		return PointClassification::ORIGIN;
+
+	if (_x == p1._x && _y == p1._y)
+		return PointClassification::DEST;
+
 	return PointClassification::BETWEEN;
 }
 
@@ -45,15 +71,14 @@ bool Point::colinear(Point& a, Point& b)
 
 double Point::distance(Point & p)
 {
-	// XXXXX
-	return .0;
+	double dx = p._x - _x;
+	double dy = p._y - _y;
+	return std::sqrt(dx * dx + dy * dy);
 }
 
 double Point::getAlpha()
 {
-	// XXXXX
-	// return angle;
-	return 0; 
+	return std::atan2(_y, _x);
 }
 
 double Point::getModule()
@@ -90,12 +115,20 @@ bool Point::rightAbove(Point& a, Point& b)
 
 double Point::slope(Point & p)
 {
-	// XXXXX
-    return 0;
+	double dx = p._x - _x;
+	double dy = p._y - _y;
+
+	// para evitar problemas de precisión.
+	if (std::abs(dx) < 1e-9)
+	{
+		// línea VERTICAL.
+		return std::numeric_limits<double>::infinity();
+	}
+
+	return dy / dx;
 }
 
 double Point::triangleArea2(Point& a, Point& b)
 {
-	// XXXXX
-	return 0.0;
+	return (_x * a.getY() - _y * a.getX() + a.getX() * b.getY() - a.getY() * b.getX() + b.getX() * _y - b.getY() * _x);
 }
