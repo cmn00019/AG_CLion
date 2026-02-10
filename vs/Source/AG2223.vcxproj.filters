@@ -1,0 +1,389 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Archivos de origen">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Archivos de encabezado">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Archivos de recursos">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Archivos de recursos\Shaders">
+      <UniqueIdentifier>{b6ce54a5-ca56-4025-810b-cb8943476fe7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de encabezado\Fonts">
+      <UniqueIdentifier>{a991302b-7626-404e-8a10-9409f496bd06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de encabezado\imgui">
+      <UniqueIdentifier>{ca96321d-40e7-42f2-97af-220e40778022}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de origen\Fonts">
+      <UniqueIdentifier>{ab3e1ab9-e9e9-4499-b5ed-ded3ab06b442}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de origen\imgui">
+      <UniqueIdentifier>{b1a3ecc8-e00d-4182-8173-65a9be468ce3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de encabezado\RenderAG">
+      <UniqueIdentifier>{6be754f1-9935-4434-b5b8-ce9160e71b3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de origen\RenderAG">
+      <UniqueIdentifier>{2ad8104b-2fb5-41b5-a726-9e149d8eb3b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de origen\RenderCore">
+      <UniqueIdentifier>{6cfb235c-97c3-445b-9b17-d19dd8996cc6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de origen\Geometry">
+      <UniqueIdentifier>{84e52919-2111-4481-8a7c-d03d84b7b0d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de encabezado\RenderCore">
+      <UniqueIdentifier>{1ebf2d5b-543d-481b-9ff0-06c4863a8420}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de encabezado\Geometry">
+      <UniqueIdentifier>{8c3c0f93-f5c8-4c97-b8e9-b0bf56b4082e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de encabezado\Patterns">
+      <UniqueIdentifier>{b2c19dc7-f89c-40f6-9f6a-ffdcecd263d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de encabezado\Precompiled">
+      <UniqueIdentifier>{1debd829-586c-42f0-8fb3-97c7b8ae7391}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de origen\Precompiled">
+      <UniqueIdentifier>{3be1434f-98eb-454c-b528-ec81f70b4566}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Fonts\lato.cpp">
+      <Filter>Archivos de origen\Fonts</Filter>
+    </ClCompile>
+    <ClCompile Include="Fonts\font_awesome.cpp">
+      <Filter>Archivos de origen\Fonts</Filter>
+    </ClCompile>
+    <ClCompile Include="Fonts\font_awesome_2.cpp">
+      <Filter>Archivos de origen\Fonts</Filter>
+    </ClCompile>
+    <ClCompile Include="Libraries\imguifiledialog\ImGuiFileDialog.cpp">
+      <Filter>Archivos de origen\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Circle.cpp">
+      <Filter>Archivos de origen\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Line.cpp">
+      <Filter>Archivos de origen\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Point.cpp">
+      <Filter>Archivos de origen\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\PointCloud.cpp">
+      <Filter>Archivos de origen\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Polygon.cpp">
+      <Filter>Archivos de origen\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\RayLine.cpp">
+      <Filter>Archivos de origen\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\SegmentLine.cpp">
+      <Filter>Archivos de origen\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Triangle.cpp">
+      <Filter>Archivos de origen\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Vect2d.cpp">
+      <Filter>Archivos de origen\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\Vertex.cpp">
+      <Filter>Archivos de origen\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="PrecompiledHeaders\stdafx.cpp">
+      <Filter>Archivos de origen\Precompiled</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\GUI.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\Renderer.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\Model3D.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\SceneContent.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\TextureList.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\Texture.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\InputManager.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\ShaderProgramDB.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\Camera.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\VAO.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\CameraProjection.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\CameraGuiAdapter.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\Window.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\ShaderProgram.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\FBOScreenshot.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\FBO.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\RenderingShader.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\Image.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\GuiUtilities.cpp">
+      <Filter>Archivos de origen\RenderCore</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\DrawLine.cpp">
+      <Filter>Archivos de origen\RenderAG</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\DrawMesh.cpp">
+      <Filter>Archivos de origen\RenderAG</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\DrawPoint.cpp">
+      <Filter>Archivos de origen\RenderAG</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\DrawPointCloud.cpp">
+      <Filter>Archivos de origen\RenderAG</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\DrawPolygon.cpp">
+      <Filter>Archivos de origen\RenderAG</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\DrawTriangle.cpp">
+      <Filter>Archivos de origen\RenderAG</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\DrawSegment.cpp">
+      <Filter>Archivos de origen\RenderAG</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\DrawRay.cpp">
+      <Filter>Archivos de origen\RenderAG</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry\AABB.cpp">
+      <Filter>Archivos de origen\Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Archivos de origen</Filter>
+    </ClCompile>
+    <ClCompile Include="Rendering\DrawCircle.cpp">
+      <Filter>Archivos de origen\RenderAG</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Fonts\lato.hpp">
+      <Filter>Archivos de encabezado\Fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="Fonts\IconsFontAwesome5.h">
+      <Filter>Archivos de encabezado\Fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="Fonts\font_awesome.hpp">
+      <Filter>Archivos de encabezado\Fonts</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\imguifiledialog\ImGuiFileDialog.h">
+      <Filter>Archivos de encabezado\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\imguifiledialog\ImGuiFileDialogConfig.h">
+      <Filter>Archivos de encabezado\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\imgui\imconfig.h">
+      <Filter>Archivos de encabezado\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\imgui\imstb_truetype.h">
+      <Filter>Archivos de encabezado\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Libraries\imgizmo\ImZoomSlider.h">
+      <Filter>Archivos de encabezado\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\BasicGeometry.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\Circle.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\Line.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\Point.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\PointCloud.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\Polygon.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\RayLine.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\SegmentLine.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\Triangle.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\Vect2d.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\Vertex.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="PrecompiledHeaders\stdafx.h">
+      <Filter>Archivos de encabezado\Precompiled</Filter>
+    </ClInclude>
+    <ClInclude Include="PrecompiledHeaders\InclDraw2D.h">
+      <Filter>Archivos de encabezado\Precompiled</Filter>
+    </ClInclude>
+    <ClInclude Include="PrecompiledHeaders\InclGeom2D.h">
+      <Filter>Archivos de encabezado\Precompiled</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\DrawLine.h">
+      <Filter>Archivos de encabezado\RenderAG</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\DrawMesh.h">
+      <Filter>Archivos de encabezado\RenderAG</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\DrawPoint.h">
+      <Filter>Archivos de encabezado\RenderAG</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\DrawPointCloud.h">
+      <Filter>Archivos de encabezado\RenderAG</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\DrawPolygon.h">
+      <Filter>Archivos de encabezado\RenderAG</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\DrawRay.h">
+      <Filter>Archivos de encabezado\RenderAG</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\DrawSegment.h">
+      <Filter>Archivos de encabezado\RenderAG</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\DrawTriangle.h">
+      <Filter>Archivos de encabezado\RenderAG</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\Renderer.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\Model3D.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\Camera.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\GUI.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\TextureList.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\SceneContent.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\ApplicationState.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\InputManager.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\VAO.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\Texture.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\ShaderProgramDB.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\CameraProjection.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\ShaderProgram.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\FBOScreenshot.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\FBO.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\Window.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\Singleton.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\RenderingShader.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\InterfaceAdapter.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\Image.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\GuiUtilities.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\CameraGuiAdapter.h">
+      <Filter>Archivos de encabezado\RenderCore</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\ChronoUtilities.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Patterns\Singleton.h">
+      <Filter>Archivos de encabezado\Patterns</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\AABB.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry\RandomUtilities.h">
+      <Filter>Archivos de encabezado\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering\DrawCircle.h">
+      <Filter>Archivos de encabezado\RenderAG</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Assets\Shaders\triangle-fs.glsl">
+      <Filter>Archivos de recursos\Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\triangle-vs.glsl">
+      <Filter>Archivos de recursos\Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\line-fs.glsl">
+      <Filter>Archivos de recursos\Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\line-vs.glsl">
+      <Filter>Archivos de recursos\Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\point-fs.glsl">
+      <Filter>Archivos de recursos\Shaders</Filter>
+    </None>
+    <None Include="Assets\Shaders\point-vs.glsl">
+      <Filter>Archivos de recursos\Shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>
