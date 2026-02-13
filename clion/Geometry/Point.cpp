@@ -73,7 +73,7 @@ bool Point::colinear(Point& a, Point& b)
 
 double Point::distance(Point & p)
 {
-	std::sqrt(std::pow(p._x - this->_x, 2) + std::pow(p._y - this->_y,2));
+	return std::sqrt(std::pow(p._x - this->_x, 2) + std::pow(p._y - this->_y,2));
 }
 
 double Point::getAlpha()
@@ -118,13 +118,11 @@ double Point::slope(Point & p)
 	double dx = p._x - this->_x;
 	double dy = p._y - this->_y;
 
-	//PENDIENTE INFINITA (RECTA VERTICAL)
 	if (std::abs(dx) < 1e-9)
 	{
 		return std::numeric_limits<double>::infinity();
 	}
 
-	//RESTO DE RECTAS (INCLUIDA HORIZONTAL)
 	return dy / dx;
 }
 
