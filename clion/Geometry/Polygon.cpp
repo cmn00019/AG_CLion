@@ -1,7 +1,8 @@
 #include "stdafx.h"
 #include "Polygon.h"
+#include <fstream>
 
-// Public methods
+// --- MÉTODOS PÚBLICOS ---
 
 Polygon::Polygon()
 {
@@ -9,139 +10,253 @@ Polygon::Polygon()
 
 Polygon::Polygon(const Polygon& Polygon)
 {
-	_vertices = std::vector<Vertex>(Polygon._vertices);
+    _vertices = std::vector<Vertex>(Polygon._vertices);
 }
 
 Polygon::Polygon(std::vector<Vertex>& vertices)
 {
-	_vertices = std::vector<Vertex>(vertices);
-}
-
-SegmentLine Polygon::getEdge(int i)
-{
-	return SegmentLine(getVertexAt(i), getVertexAt((i + 1) % _vertices.size()));
+    _vertices = std::vector<Vertex>(vertices);
 }
 
 Polygon::Polygon(const std::string & filename)
 {
-	//XXXX
+    std::ifstream file(filename);
+    if (file.is_open())
+    {
+        double x, y;
+        while (file >> x >> y)
+        {
+            add(Point(x, y));
+        }
+        file.close();
+    }
 }
 
 Polygon::~Polygon()
 {
 }
 
+SegmentLine Polygon::getEdge(int i)
+{
+    return SegmentLine(getVertexAt(i), getVertexAt((i + 1) % _vertices.size()));
+}
+
 bool Polygon::add(const Vertex & vertex)
 {
-	size_t index = _vertices.size();
+    size_t index = _vertices.size();
+    _vertices.push_back(vertex);
 
-	//if (intersectsWithAnySegment(vertex)) return false;
+    _vertices[index].setPolygon(this);
+    _vertices[index].setPosition(static_cast<int>(index));
 
-	_vertices.push_back(vertex);
-	_vertices[index].setPolygon(this);
-	_vertices[index].setPosition(static_cast<int>(index));
-
-	return true;
+    return true;
 }
 
 bool Polygon::add(const Point & point)
 {
-	Vertex vertex(point);
-
-	return this->add(vertex);
+    Vertex vertex(point);
+    return this->add(vertex);
 }
 
 Vertex Polygon::getVertexAt(int position)
 {
-	if (position >= 0 && position < _vertices.size())
-	{
-		return _vertices[position];
-	}
-	else 
-	{
-		return Vertex();
-	}
+    if (position >= 0 && position < _vertices.size())
+    {
+       return _vertices[position];
+    }
+
+    return Vertex();
 }
+
+// --- MÉTODOS DE INTERSECCIÓN ---
 
 bool Polygon::intersects(Line& line, Vect2d& interseccion)
 {
-	// XXXX
-	return false;
+    for (int i = 0; i < _vertices.size(); i++)
+    {
+        SegmentLine edge = getEdge(i);
+
+        if (line.intersects(edge, interseccion)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool Polygon::intersects(RayLine& ray, Vect2d& interseccion)
 {
-	// XXXX
-	return false;
-}
 
-bool Polygon::convex()
-{
-	// XXXX
-	return true;
+    for (int i = 0; i < _vertices.size(); i++)
+    {
+        SegmentLine edge = getEdge(i);
+
+        Point A = ray.getA();
+        Point B = ray.getB();
+        Point C = edge.getA();
+        Point D = edge.getB();
+
+        // Vectores directores
+        double vRayX = B.getX() - A.getX();
+        double vRayY = B.getY() - A.getY();
+        double vSegX = D.getX() - C.getX();
+        double vSegY = D.getY() - C.getY();
+
+        // Determinante (producto cruzado 2D)
+        double det = vRayX * vSegY - vRayY * vSegX;
+
+        if (std::abs(det) > 1e-9) { // No son paralelos
+            // Parametros t (rayo) y u (segmento)
+            double t = ((C.getX() - A.getX()) * vSegY - (C.getY() - A.getY()) * vSegX) / det;
+            double u = ((C.getX() - A.getX()) * vRayY - (C.getY() - A.getY()) * vRayX) / det;
+
+            // Condiciones: Rayo (t >= 0), Segmento (0 <= u <= 1)
+            if (t >= 0.0 && u >= 0.0 && u <= 1.0) {
+                // Calculamos el punto
+                interseccion.setX(A.getX() + t * vRayX);
+                interseccion.setY(A.getY() + t * vRayY);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 bool Polygon::intersects(SegmentLine& segment, Vect2d& interseccion)
 {
-	return false;
+    for (int i = 0; i < _vertices.size(); i++)
+    {
+        SegmentLine edge = getEdge(i);
+
+        if (edge.segmentIntersection(segment))
+        {
+
+            Point A = segment.getA();
+            Point B = segment.getB();
+            Point C = edge.getA();
+            Point D = edge.getB();
+
+            double v1x = B.getX() - A.getX();
+            double v1y = B.getY() - A.getY();
+            double v2x = D.getX() - C.getX();
+            double v2y = D.getY() - C.getY();
+
+            double det = v1x * v2y - v1y * v2x;
+
+            if (std::abs(det) > 1e-9) {
+                double t = ((C.getX() - A.getX()) * v2y - (C.getY() - A.getY()) * v2x) / det;
+                interseccion.setX(A.getX() + t * v1x);
+                interseccion.setY(A.getY() + t * v1y);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
-Vertex Polygon::next(int index)
+// --- CONVEXIDAD Y PUNTO DENTRO ---
+
+bool Polygon::convex()
 {
-	if (index >= 0 && index < _vertices.size())
-	{
-		return _vertices[(index + 1) % _vertices.size()];
-	}
+    if (_vertices.size() < 3) return false;
 
-	return Vertex();
-}
+    bool hasPositive = false;
+    bool hasNegative = false;
 
-std::ostream& operator<<(std::ostream& os, const Polygon& polygon)
-{
-	for (int i = 0; i < polygon._vertices.size(); i++) 
-	{
-		os << polygon._vertices[i] << "\n";
-	}
+    for (int i = 0; i < _vertices.size(); i++)
+    {
+        Vertex prev = getVertexAt((i - 1 + _vertices.size()) % _vertices.size());
+        Vertex curr = getVertexAt(i);
+        Vertex next = getVertexAt((i + 1) % _vertices.size());
 
-	return os;
-}
+        double crossProduct = curr.triangleArea2(next, prev);
 
-Vertex Polygon::previous(int index)
-{
-	if (index >= 0 && index < _vertices.size())
-	{
-		return _vertices[(index - 1 + _vertices.size()) % _vertices.size()];
-	}
+        if (crossProduct > 0) hasPositive = true;
+        if (crossProduct < 0) hasNegative = true;
 
-	return Vertex();
-}
+        // Si hay giros a izquierda y a derecha mezclados, es cóncavo.
+        if (hasPositive && hasNegative) return false;
+    }
 
-Polygon & Polygon::operator=(const Polygon &polygon)
-{
-	if (this != &polygon)
-	{
-		this->_vertices = polygon._vertices;
-	}
-
-	return *this;
+    return true;
 }
 
 bool Polygon::pointInConvexPolygonGeo(Point& point)
 {
-    // XXXX
-	return true;
+    if (!convex()) return false;
+    if (_vertices.empty()) return false;
+
+    SegmentLine edge0 = getEdge(0);
+    bool sideReference = point.left(edge0.getA(), edge0.getB());
+
+    for (int i = 1; i < _vertices.size(); i++)
+    {
+        SegmentLine edge = getEdge(i);
+        if (point.left(edge.getA(), edge.getB()) != sideReference)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// --- UTILIDADES ---
+
+Vertex Polygon::next(int index)
+{
+    if (index >= 0 && index < _vertices.size())
+    {
+       return _vertices[(index + 1) % _vertices.size()];
+    }
+    return Vertex();
+}
+
+Vertex Polygon::previous(int index)
+{
+    if (index >= 0 && index < _vertices.size())
+    {
+       return _vertices[(index - 1 + _vertices.size()) % _vertices.size()];
+    }
+    return Vertex();
 }
 
 void Polygon::save(const std::string& filename)
 {
-	// XXXX
+    std::ofstream file(filename);
+    if (file.is_open())
+    {
+        for (Vertex& v : _vertices)
+        {
+            file << v.getX() << " " << v.getY() << "\n";
+        }
+        file.close();
+    }
 }
 
 void Polygon::set(Vertex& vertex, int pos)
 {
-	if (pos >= 0 && pos < _vertices.size()) {
-		_vertices[pos] = vertex;
-		vertex.setPolygon(this);
-		vertex.setPosition(pos);
-	}
+    if (pos >= 0 && pos < _vertices.size()) {
+       _vertices[pos] = vertex;
+       vertex.setPolygon(this);
+       vertex.setPosition(pos);
+    }
+}
+
+Polygon & Polygon::operator=(const Polygon &polygon)
+{
+    if (this != &polygon)
+    {
+       this->_vertices = polygon._vertices;
+    }
+
+    return *this;
+}
+
+std::ostream& operator<<(std::ostream& os, const Polygon& polygon)
+{
+    for (const auto& v : polygon._vertices)
+    {
+       os << v << "\n";
+    }
+    return os;
 }
