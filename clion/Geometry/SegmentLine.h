@@ -60,12 +60,12 @@ public:
 	/**
 	*	@brief Returns the origin of the segment.
 	*/
-	Point getA() { return _orig; }
+	Point &getA() { return _orig; }
 
 	/**
 	*	@brief Returns the end of the segment.
 	*/
-	Point getB() { return _dest; }
+	Point &getB() { return _dest; }
 
 	/**
 	*	@brief Returns the constant of the equation of the implied line: c = y-mx.

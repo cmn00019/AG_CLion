@@ -9,8 +9,7 @@ Circle::~Circle()
 
 bool Circle::isInside(const Point &p)
 { 
-    // XXXX
-    return true;
+    return BasicGeometry::equal(_radius, _center.distance(const_cast<Point&>(p)));
 }
 
 Polygon Circle::getPointsCircle(uint32_t numSubdivisions)

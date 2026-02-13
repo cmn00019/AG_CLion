@@ -7,6 +7,7 @@
  *	Created on 5 de enero de 2021, 13:57
  */
 
+#include "Circle.h"
 #include "Vect2d.h"
 
 class Triangle
@@ -30,7 +31,15 @@ public:
 	*   @param t.
 	*/  
 	Triangle (const Triangle &t);
-   
+
+	~Triangle();
+
+	double area();
+
+	Circle getInscribed();
+
+	Circle getCirumscribed();
+
 	/**
 	*	@brief getter. 
 	*	@return vertex A. 
