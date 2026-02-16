@@ -6,53 +6,146 @@
 #include "InclGeom2D.h"
 #include "PointCloud.h"
 #include "RandomUtilities.h"
+#include <algorithm>
+#include <vector>
 
 
 // ----------------------------- BUILD YOUR SCENARIO HERE -----------------------------------
 
 void AlgGeom::SceneContent::buildScenario()
 {
-    vec2 minBoundaries = vec2(-2.0, -.4), maxBoundaries = vec2(-minBoundaries);
-
-    // Random segments
-    int numSegments = 8;
-
-    for (int segmentIdx = 0; segmentIdx < numSegments; ++segmentIdx)
+    // ====================================================
+    // EJERCICIO 1: Nube de 200 puntos aleatorios (disco)
+    // ====================================================
+    PointCloud cloud;
+    float radioNube = 5.0f;
+    for (int i = 0; i < 200; i++)
     {
-        Point a(RandomUtilities::getUniformRandom(minBoundaries.x, maxBoundaries.x), RandomUtilities::getUniformRandom(minBoundaries.y, maxBoundaries.y));
-        Point b(RandomUtilities::getUniformRandom(minBoundaries.x, maxBoundaries.x), RandomUtilities::getUniformRandom(minBoundaries.y, maxBoundaries.y));
-        SegmentLine* segment = new SegmentLine(a, b);
+        vec3 p = RandomUtilities::getUniformRandomInUnitDisk();
+        cloud.addPoint(Point(p.x * radioNube, p.y * radioNube));
+    }
+    cloud.save("../../nube_puntos.txt");
 
-        this->addNewModel((new DrawSegment(*segment))->setLineColor(RandomUtilities::getUniformRandomColor())->overrideModelName()->setLineWidth(RandomUtilities::getUniformRandom(1.0f, 3.0f)));
-        delete segment;
+    // Dibujar nube en amarillo dorado
+    this->addNewModel((new DrawPointCloud(cloud))->setPointColor(vec4(0.0f, 0.0f, 1.0f, 1.0f))->overrideModelName());
+
+    // ====================================================
+    // EJERCICIO 2: Dos segmentos con interseccion propia
+    // ====================================================
+    int numPuntos = static_cast<int>(cloud.size());
+    bool encontrado = false;
+
+    for (int intento = 0; intento < 5000 && !encontrado; intento++)
+    {
+        int i1 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+        int i2 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+        int i3 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+        int i4 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+
+        if (i1 == i2 || i3 == i4 || i1 == i3 || i1 == i4 || i2 == i3 || i2 == i4)
+            continue;
+
+        SegmentLine seg1(cloud.getPoint(i1), cloud.getPoint(i2));
+        SegmentLine seg2(cloud.getPoint(i3), cloud.getPoint(i4));
+
+        if (seg1.segmentIntersection(seg2))
+        {
+            this->addNewModel((new DrawSegment(seg1))->setLineColor(vec4(1.0f, 0.0f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));
+            this->addNewModel((new DrawSegment(seg2))->setLineColor(vec4(1.0f, 0.0f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));
+            encontrado = true;
+        }
     }
 
-    // Random points
-    int numPoints = 200;
-
-    for (int pointIdx = 0; pointIdx < numPoints; ++pointIdx)
+    // ====================================================
+    // EJERCICIO 3: Recta (azul) y Rayo (verde)
+    // ====================================================
     {
-        Point point(RandomUtilities::getUniformRandom(minBoundaries.x, maxBoundaries.x), RandomUtilities::getUniformRandom(minBoundaries.x, maxBoundaries.x));
-        this->addNewModel((new DrawPoint(point))->setPointColor(RandomUtilities::getUniformRandomColor())->overrideModelName()->setPointSize(RandomUtilities::getUniformRandom(4.0f, 8.0f)));
+        int ri1 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+        int ri2 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+        while (ri2 == ri1) ri2 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+
+        Line* recta = new Line(cloud.getPoint(ri1), cloud.getPoint(ri2));
+        this->addNewModel((new DrawLine(*recta))->setLineColor(vec4(0.0f, 0.0f, 1.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));
+        delete recta;
+    }
+    {
+        int ri1 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+        int ri2 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+        while (ri2 == ri1) ri2 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+
+        RayLine* rayo = new RayLine(cloud.getPoint(ri1), cloud.getPoint(ri2));
+        this->addNewModel((new DrawRay(*rayo))->setLineColor(vec4(0.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));
+        delete rayo;
     }
 
-    // Polygon
-    float polygonAngle = .0f;
-    constexpr float polygonAlpha = 2.0f * glm::pi<float>() / 5.0f;
-    Polygon* polygon = new Polygon;
-
-    while (polygonAngle < 2.0f * glm::pi<float>())
+    // ====================================================
+    // EJERCICIO 4: Poligono valido con 5 puntos aleatorios
+    // ====================================================
     {
-        polygon->add(Point(std::cos(polygonAngle), std::sin(polygonAngle)));
-        polygonAngle += polygonAlpha;
+        std::vector<int> indices;
+        while (indices.size() < 5)
+        {
+            int idx = RandomUtilities::getUniformRandomInt(0, numPuntos);
+            bool repetido = false;
+            for (int k : indices)
+                if (k == idx) { repetido = true; break; }
+            if (!repetido) indices.push_back(idx);
+        }
+
+        std::vector<std::pair<double, Point>> puntosConAngulo;
+        double cx = 0.0, cy = 0.0;
+        for (int idx : indices)
+        {
+            Point pt = cloud.getPoint(idx);
+            cx += pt.getX();
+            cy += pt.getY();
+        }
+        cx /= 5.0;
+        cy /= 5.0;
+
+        for (int idx : indices)
+        {
+            Point pt = cloud.getPoint(idx);
+            double angulo = std::atan2(pt.getY() - cy, pt.getX() - cx);
+            puntosConAngulo.push_back({angulo, pt});
+        }
+
+        std::sort(puntosConAngulo.begin(), puntosConAngulo.end(),
+            [](const std::pair<double, Point>& a, const std::pair<double, Point>& b) {
+                return a.first < b.first;
+            });
+
+        Polygon* poligono = new Polygon;
+        for (auto& par : puntosConAngulo)
+            poligono->add(par.second);
+
+        this->addNewModel((new DrawPolygon(*poligono))->setTriangleColor(vec4(0.0f, 1.0f, 1.0f, 1.0f))->overrideModelName());
+        delete poligono;
     }
 
-    this->addNewModel((new DrawPolygon(*polygon))->setTriangleColor(vec4(RandomUtilities::getUniformRandomColor(), 1.0f))->overrideModelName()->setModelMatrix(glm::rotate(mat4(1.0f), (glm::abs(4 * polygonAlpha - glm::pi<float>() / 2.0f * 3.0f)), vec3(.0f, .0f, 1.0f))));
-    delete polygon;
+    // ====================================================
+    // EJERCICIO 5: Triangulo + inscrito + circunscrito
+    // ====================================================
+    {
+        int ti1 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+        int ti2 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+        while (ti2 == ti1) ti2 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+        int ti3 = RandomUtilities::getUniformRandomInt(0, numPuntos);
+        while (ti3 == ti1 || ti3 == ti2) ti3 = RandomUtilities::getUniformRandomInt(0, numPuntos);
 
-    // Line
-    Line* line = new Line(Point(-1.0, -1.0), Point(1.0, 1.0));
-    this->addNewModel((new DrawLine(*line))->setLineColor(vec4(.0f, 1.0f, .0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));
+        Vect2d va(cloud.getPoint(ti1).getX(), cloud.getPoint(ti1).getY());
+        Vect2d vb(cloud.getPoint(ti2).getX(), cloud.getPoint(ti2).getY());
+        Vect2d vc(cloud.getPoint(ti3).getX(), cloud.getPoint(ti3).getY());
+
+        Triangle triangulo(va, vb, vc);
+        this->addNewModel((new DrawTriangle(triangulo))->setTriangleColor(vec4(1.0f, 0.0f, 0.0f, 1.0f))->overrideModelName());
+
+        Circle inscrito = triangulo.getInscribed();
+        this->addNewModel((new DrawCircle(inscrito))->setLineColor(vec4(0.0f, 0.0f, 0.0f, 1.0f))->setTriangleColor(vec4(0.0f, 0.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
+
+        Circle circunscrito = triangulo.getCirumscribed();
+        this->addNewModel((new DrawCircle(circunscrito))->setLineColor(vec4(0.0f, 0.0f, 0.0f, 1.0f))->setTriangleColor(vec4(0.0f, 0.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
+    }
 }
 
 

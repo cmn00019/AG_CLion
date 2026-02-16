@@ -183,7 +183,7 @@ int main ( int argc, char** argv )
    try
    {
       Scene::getInstance ()->setScene ( 1024, 576 );
-      
+
 
       while ( !glfwWindowShouldClose ( miVentana ) )
       {
@@ -319,8 +319,6 @@ void callbackKey ( GLFWwindow* ventana, int tecla, int scancode, int accion,
          }
          break;  
          
-         
-      
        case GLFW_KEY_1:
          if ( accion == GLFW_PRESS )
          {
