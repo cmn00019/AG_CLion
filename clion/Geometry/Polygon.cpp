@@ -11,11 +11,25 @@ Polygon::Polygon()
 Polygon::Polygon(const Polygon& Polygon)
 {
     _vertices = std::vector<Vertex>(Polygon._vertices);
+
+    // Actualizar el doble enlace: los vértices copiados deben apuntar a this
+    for (size_t i = 0; i < _vertices.size(); i++)
+    {
+        _vertices[i].setPolygon(this);
+        _vertices[i].setPosition(static_cast<int>(i));
+    }
 }
 
 Polygon::Polygon(std::vector<Vertex>& vertices)
 {
     _vertices = std::vector<Vertex>(vertices);
+
+    // Actualizar el doble enlace: los vértices deben apuntar a this
+    for (size_t i = 0; i < _vertices.size(); i++)
+    {
+        _vertices[i].setPolygon(this);
+        _vertices[i].setPosition(static_cast<int>(i));
+    }
 }
 
 Polygon::Polygon(const std::string & filename)
@@ -237,8 +251,8 @@ void Polygon::set(Vertex& vertex, int pos)
 {
     if (pos >= 0 && pos < _vertices.size()) {
        _vertices[pos] = vertex;
-       vertex.setPolygon(this);
-       vertex.setPosition(pos);
+       _vertices[pos].setPolygon(this);
+       _vertices[pos].setPosition(pos);
     }
 }
 
@@ -247,6 +261,13 @@ Polygon & Polygon::operator=(const Polygon &polygon)
     if (this != &polygon)
     {
        this->_vertices = polygon._vertices;
+
+       // Actualizar el doble enlace tras la copia
+       for (size_t i = 0; i < _vertices.size(); i++)
+       {
+           _vertices[i].setPolygon(this);
+           _vertices[i].setPosition(static_cast<int>(i));
+       }
     }
 
     return *this;

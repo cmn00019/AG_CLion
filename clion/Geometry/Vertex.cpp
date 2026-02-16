@@ -29,25 +29,42 @@ Vertex::~Vertex()
 
 bool Vertex::convex()
 {
-	// XXXXX
-	return false;
+	if (!_polygon) return false;
+
+	Vertex prev = _polygon->previous(_position);
+	Vertex nxt  = _polygon->next(_position);
+
+	Point prevP = prev.getPoint();
+	Point thisP = this->getPoint();
+	Point nextP = nxt.getPoint();
+
+	// Misma fórmula que Polygon::convex(): curr.triangleArea2(next, prev)
+	// Para CCW, cross > 0 indica vértice convexo
+	double cross = thisP.triangleArea2(nextP, prevP);
+	return cross > 0;
 }
 
 bool Vertex::concave()
 {
-	// XXXXX
-	return false;
+	return !convex();
 }
 
 Vertex Vertex::next()
 {
-	// XXXXX
+	if (_polygon)
+	{
+		return _polygon->next(_position);
+	}
 	return Vertex();
 }
 
 SegmentLine Vertex::nextEdge()
 {
-	// XXXXX
+	if (_polygon)
+	{
+		// Arista desde this hasta next = getEdge(_position)
+		return _polygon->getEdge(_position);
+	}
 	return SegmentLine();
 }
 
@@ -72,12 +89,20 @@ std::ostream& operator<<(std::ostream& os, const Vertex& vertex)
 
 Vertex Vertex::previous()
 {
-	// XXXXX
+	if (_polygon)
+	{
+		return _polygon->previous(_position);
+	}
 	return Vertex();
 }
 
 SegmentLine Vertex::previousEdge()
 {
-	// XXXXX
+	if (_polygon)
+	{
+		// Arista desde previous hasta this = getEdge(prevIndex)
+		int prevIdx = (_position - 1 + static_cast<int>(_polygon->getNumVertices())) % static_cast<int>(_polygon->getNumVertices());
+		return _polygon->getEdge(prevIdx);
+	}
 	return SegmentLine();
 }
