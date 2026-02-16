@@ -118,7 +118,7 @@ double Point::slope(Point & p)
 	double dx = p._x - this->_x;
 	double dy = p._y - this->_y;
 
-	if (std::abs(dx) < 1e-9)
+	if (BasicGeometry::equal(this->_x, p._x))
 	{
 		return std::numeric_limits<double>::infinity();
 	}
