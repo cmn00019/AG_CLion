@@ -27,9 +27,14 @@ protected:
     float getDistanceT0(Vect2d& point);
     
 	/**
-	*	@brief Obstaints the parameters t and s where both lines intersects, if they do.
+	*	@brief Obtains the parameters s and t where both lines intersect, if they do.
+	*	@param c Origin of the second line (C).
+	*	@param d Destination of the second line (D).
+	*	@param s Parameter for this segment (AB).
+	*	@param t Parameter for the other line (CD).
+	*	@return true if lines are not parallel and s is in [0,1].
 	*/
-    //virtual bool intersects(Vect2d& p1, Vect2d& p2, float& t, float& s);
+    virtual bool intersects(Vect2d& c, Vect2d& d, double& s, double& t);
 
 public:    
     /**
@@ -80,7 +85,25 @@ public:
 	/**
 	*	@brief Distance from a point defined by 'vector' to this segment.
 	*/
-	float distPointSegment(Vect2d& vector);
+	double distPointSegment(Vect2d& vector);
+
+	/**
+	*	@brief Checks if this segment intersects with a line.
+	*	@param intersection Point of intersection if it exists.
+	*/
+	bool intersects(Line& r, Vect2d& res);
+
+	/**
+	*	@brief Checks if this segment intersects with a ray.
+	*	@param intersection Point of intersection if it exists.
+	*/
+	bool intersects(RayLine& r, Vect2d& res);
+
+	/**
+	*	@brief Checks if this segment intersects with another segment.
+	*	@param intersection Point of intersection if it exists.
+	*/
+	bool intersects(SegmentLine& r, Vect2d& res);
 
 	/**
 	*	@brief Checks if a segment is equal to this one.

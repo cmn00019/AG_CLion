@@ -66,9 +66,49 @@ bool SegmentLine::distinct(SegmentLine & segment)
 	return !equal(segment);
 }
 
-float SegmentLine::distPointSegment(Vect2d& vector)
+double SegmentLine::distPointSegment(Vect2d& vector)
 {
-	return 0.0f;
+	// P = _orig, Q = _dest
+	// d = Q - P (vector director del segmento)
+	double dx = _dest.getX() - _orig.getX();
+	double dy = _dest.getY() - _orig.getY();
+
+	// A - P (vector del origen del segmento al punto)
+	double apx = vector.getX() - _orig.getX();
+	double apy = vector.getY() - _orig.getY();
+
+	// t0 = d·(A-P) / (d·d)
+	double dd = dx * dx + dy * dy;
+
+	if (dd < glm::epsilon<double>())
+	{
+		// Segmento degenerado (longitud 0): distancia al origen
+		return std::sqrt(apx * apx + apy * apy);
+	}
+
+	double t0 = (dx * apx + dy * apy) / dd;
+
+	if (t0 <= 0.0)
+	{
+		// Punto mas cercano es P (_orig)
+		return std::sqrt(apx * apx + apy * apy);
+	}
+	else if (t0 >= 1.0)
+	{
+		// Punto mas cercano es Q (_dest)
+		double aqx = vector.getX() - _dest.getX();
+		double aqy = vector.getY() - _dest.getY();
+		return std::sqrt(aqx * aqx + aqy * aqy);
+	}
+	else
+	{
+		// Punto mas cercano es P + t0 * d
+		double projX = _orig.getX() + t0 * dx;
+		double projY = _orig.getY() + t0 * dy;
+		double diffX = vector.getX() - projX;
+		double diffY = vector.getY() - projY;
+		return std::sqrt(diffX * diffX + diffY * diffY);
+	}
 }
 
 bool SegmentLine::equal(SegmentLine & segment)
@@ -154,5 +194,104 @@ std::ostream& operator<<(std::ostream& os, const SegmentLine& segment)
 
 float SegmentLine::getDistanceT0(Vect2d& point)
 {
-	return 0.0f;
+	// d = Q - P (vector director del segmento)
+	double dx = _dest.getX() - _orig.getX();
+	double dy = _dest.getY() - _orig.getY();
+
+	// A - P
+	double apx = point.getX() - _orig.getX();
+	double apy = point.getY() - _orig.getY();
+
+	// t0 = d·(A-P) / (d·d)
+	double dd = dx * dx + dy * dy;
+
+	if (dd < glm::epsilon<double>())
+		return 0.0f;
+
+	return static_cast<float>((dx * apx + dy * apy) / dd);
+}
+
+bool SegmentLine::intersects(Vect2d& c, Vect2d& d, double& s, double& t)
+{
+	// A = _orig, B = _dest (segmento this)
+	// C = c, D = d (la otra linea/segmento/rayo)
+
+	double xAB = _dest.getX() - _orig.getX();
+	double yAB = _dest.getY() - _orig.getY();
+	double xCD = d.getX() - c.getX();
+	double yCD = d.getY() - c.getY();
+	double xAC = c.getX() - _orig.getX();
+	double yAC = c.getY() - _orig.getY();
+
+	// Denominador comun
+	double denom = xCD * yAB - xAB * yCD;
+
+	// Si el denominador es ~0, las rectas son paralelas
+	if (BasicGeometry::equal(xCD * yAB, xAB * yCD))
+		return false;
+
+	// Calcular s (parametro de this: AB)
+	s = (xCD * yAC - xAC * yCD) / denom;
+
+	// Calcular t (parametro de la otra: CD)
+	t = (xAB * yAC - xAC * yAB) / denom;
+
+	// s debe estar en [0,1] para que la interseccion caiga en el segmento this
+	if (s < 0.0 || s > 1.0)
+		return false;
+
+	return true;
+}
+
+// --- Metodos publicos de interseccion ---
+
+bool SegmentLine::intersects(Line& r, Vect2d& res)
+{
+	Vect2d c(r.getA());
+	Vect2d d(r.getB());
+	double s, t;
+
+	// Segmento-Recta: solo necesitamos 0 <= s <= 1 (t sin restriccion)
+	if (intersects(c, d, s, t))
+	{
+		Point p = getPoint(s);
+		res.setX(p.getX());
+		res.setY(p.getY());
+		return true;
+	}
+	return false;
+}
+
+bool SegmentLine::intersects(RayLine& r, Vect2d& res)
+{
+	Vect2d c(r.getA());
+	Vect2d d(r.getB());
+	double s, t;
+
+	// Segmento-Rayo: 0 <= s <= 1 y t >= 0
+	if (intersects(c, d, s, t) && t >= 0.0)
+	{
+		Point p = getPoint(s);
+		res.setX(p.getX());
+		res.setY(p.getY());
+		return true;
+	}
+	return false;
+}
+
+bool SegmentLine::intersects(SegmentLine& r, Vect2d& res)
+{
+	Vect2d c(r.getA());
+	Vect2d d(r.getB());
+	double s, t;
+
+	// Segmento-Segmento: 0 <= s <= 1 y 0 <= t <= 1
+	if (intersects(c, d, s, t) && t >= 0.0 && t <= 1.0)
+	{
+		Point p = getPoint(s);
+		res.setX(p.getX());
+		res.setY(p.getY());
+		return true;
+	}
+	return false;
 }
