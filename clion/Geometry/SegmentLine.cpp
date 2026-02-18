@@ -70,44 +70,37 @@ double SegmentLine::distPointSegment(Vect2d& vector)
 {
 	// P = _orig, Q = _dest
 	// d = Q - P (vector director del segmento)
-	double dx = _dest.getX() - _orig.getX();
-	double dy = _dest.getY() - _orig.getY();
+	Vect2d d(_dest.getX() - _orig.getX(), _dest.getY() - _orig.getY());
 
 	// A - P (vector del origen del segmento al punto)
-	double apx = vector.getX() - _orig.getX();
-	double apy = vector.getY() - _orig.getY();
+	Vect2d ap(vector.getX() - _orig.getX(), vector.getY() - _orig.getY());
 
 	// t0 = d·(A-P) / (d·d)
-	double dd = dx * dx + dy * dy;
+	double dd = d.dot(d);
 
-	if (dd < glm::epsilon<double>())
+	if (BasicGeometry::equal(dd, 0.0))
 	{
-		// Segmento degenerado (longitud 0): distancia al origen
-		return std::sqrt(apx * apx + apy * apy);
+		// (longitud 0)
+		return vector.distance(_orig);
 	}
 
-	double t0 = (dx * apx + dy * apy) / dd;
+	double t0 = d.dot(ap) / dd;
 
 	if (t0 <= 0.0)
 	{
 		// Punto mas cercano es P (_orig)
-		return std::sqrt(apx * apx + apy * apy);
+		return vector.distance(_orig);
 	}
 	else if (t0 >= 1.0)
 	{
 		// Punto mas cercano es Q (_dest)
-		double aqx = vector.getX() - _dest.getX();
-		double aqy = vector.getY() - _dest.getY();
-		return std::sqrt(aqx * aqx + aqy * aqy);
+		return vector.distance(_dest);
 	}
 	else
 	{
 		// Punto mas cercano es P + t0 * d
-		double projX = _orig.getX() + t0 * dx;
-		double projY = _orig.getY() + t0 * dy;
-		double diffX = vector.getX() - projX;
-		double diffY = vector.getY() - projY;
-		return std::sqrt(diffX * diffX + diffY * diffY);
+		Vect2d proj = Vect2d(_orig) + d.scalarMult(t0);
+		return vector.distance(proj);
 	}
 }
 
@@ -195,20 +188,18 @@ std::ostream& operator<<(std::ostream& os, const SegmentLine& segment)
 float SegmentLine::getDistanceT0(Vect2d& point)
 {
 	// d = Q - P (vector director del segmento)
-	double dx = _dest.getX() - _orig.getX();
-	double dy = _dest.getY() - _orig.getY();
+	Vect2d d(_dest.getX() - _orig.getX(), _dest.getY() - _orig.getY());
 
 	// A - P
-	double apx = point.getX() - _orig.getX();
-	double apy = point.getY() - _orig.getY();
+	Vect2d ap(point.getX() - _orig.getX(), point.getY() - _orig.getY());
 
 	// t0 = d·(A-P) / (d·d)
-	double dd = dx * dx + dy * dy;
+	double dd = d.dot(d);
 
-	if (dd < glm::epsilon<double>())
+	if (BasicGeometry::equal(dd, 0.0))
 		return 0.0f;
 
-	return static_cast<float>((dx * apx + dy * apy) / dd);
+	return static_cast<float>(d.dot(ap) / dd);
 }
 
 bool SegmentLine::intersects(Vect2d& c, Vect2d& d, double& s, double& t)

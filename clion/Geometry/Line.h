@@ -11,6 +11,12 @@
 
 class Line : public SegmentLine
 {
+protected:
+	/**
+	*	@brief Override: for a Line, s has no restriction (line is infinite).
+	*/
+	bool intersects(Vect2d& c, Vect2d& d, double& s, double& t) override;
+
 public:
 	/**
 	*	@brief Constructor.

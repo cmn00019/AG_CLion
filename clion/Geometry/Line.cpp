@@ -19,106 +19,97 @@ Line::~Line()
 
 double Line::distancePointLine(Vect2d& v)
 {
-	// d = |cross(AB, AP)| / |AB|
-	double ABx = _dest.getX() - _orig.getX();
-	double ABy = _dest.getY() - _orig.getY();
-	double APx = v.getX() - _orig.getX();
-	double APy = v.getY() - _orig.getY();
+	// P = _orig, Q = _dest
+	// d = Q - P (vector director de la recta)
+	Vect2d d(_dest.getX() - _orig.getX(), _dest.getY() - _orig.getY());
 
-	double cross = ABx * APy - ABy * APx;
-	double lengthAB = std::sqrt(ABx * ABx + ABy * ABy);
+	// A - P
+	Vect2d ap(v.getX() - _orig.getX(), v.getY() - _orig.getY());
 
-	if (lengthAB < glm::epsilon<double>())
+	// t0 = d·(A-P) / (d·d)
+	double dd = d.dot(d);
+
+	if (BasicGeometry::equal(dd, 0.0))
 		return 0.0;
 
-	return std::abs(cross) / lengthAB;
+	double t0 = d.dot(ap) / dd;
+
+	// D = |A - (P + t0*d)| (para la recta, siempre se usa la proyeccion)
+	Vect2d proj = Vect2d(_orig) + d.scalarMult(t0);
+	return v.distance(proj);
 }
 
 bool Line::intersects(Line& line, Vect2d& intersection)
 {
-	// Cramer sin restricciones en t ni s (ambas son rectas infinitas)
-	Point A = _orig;
-	Point B = _dest;
-	Point C = line.getA();
-	Point D = line.getB();
+	Vect2d c(line.getA());
+	Vect2d d(line.getB());
+	double s, t;
 
-	double v1x = B.getX() - A.getX();
-	double v1y = B.getY() - A.getY();
-	double v2x = D.getX() - C.getX();
-	double v2y = D.getY() - C.getY();
-
-	double det = v1x * v2y - v1y * v2x;
-
-	if (std::abs(det) < glm::epsilon<double>())
-		return false; // Rectas paralelas
-
-	double t = ((C.getX() - A.getX()) * v2y - (C.getY() - A.getY()) * v2x) / det;
-
-	intersection.setX(A.getX() + t * v1x);
-	intersection.setY(A.getY() + t * v1y);
-
-	return true;
+	// Recta-Recta: cualquier valor de s y t es valido
+	if (intersects(c, d, s, t))
+	{
+		Point p = getPoint(s);
+		intersection.setX(p.getX());
+		intersection.setY(p.getY());
+		return true;
+	}
+	return false;
 }
 
 bool Line::intersects(RayLine& rayline, Vect2d& intersection)
 {
-	// Cramer: sin restricción para la recta (t), con restricción s >= 0 para el rayo
-	Point A = _orig;
-	Point B = _dest;
-	Point C = rayline.getA();
-	Point D = rayline.getB();
+	Vect2d c(rayline.getA());
+	Vect2d d(rayline.getB());
+	double s, t;
 
-	double v1x = B.getX() - A.getX();
-	double v1y = B.getY() - A.getY();
-	double v2x = D.getX() - C.getX();
-	double v2y = D.getY() - C.getY();
-
-	double det = v1x * v2y - v1y * v2x;
-
-	if (std::abs(det) < glm::epsilon<double>())
-		return false; // Paralelos
-
-	double t = ((C.getX() - A.getX()) * v2y - (C.getY() - A.getY()) * v2x) / det;
-	double s = ((C.getX() - A.getX()) * v1y - (C.getY() - A.getY()) * v1x) / det;
-
-	// El rayo requiere s >= 0
-	if (s < 0.0)
-		return false;
-
-	intersection.setX(A.getX() + t * v1x);
-	intersection.setY(A.getY() + t * v1y);
-
-	return true;
+	// Recta-Rayo: t >= 0
+	if (intersects(c, d, s, t) && t >= 0.0)
+	{
+		Point p = getPoint(s);
+		intersection.setX(p.getX());
+		intersection.setY(p.getY());
+		return true;
+	}
+	return false;
 }
 
 bool Line::intersects(SegmentLine& segment, Vect2d& intersection)
 {
-	// Cramer: sin restricción para la recta (t), con 0 <= s <= 1 para el segmento
-	Point A = _orig;
-	Point B = _dest;
-	Point C = segment.getA();
-	Point D = segment.getB();
+	Vect2d c(segment.getA());
+	Vect2d d(segment.getB());
+	double s, t;
 
-	double v1x = B.getX() - A.getX();
-	double v1y = B.getY() - A.getY();
-	double v2x = D.getX() - C.getX();
-	double v2y = D.getY() - C.getY();
+	// Recta-Segmento: 0 <= t <= 1
+	if (intersects(c, d, s, t) && t >= 0.0 && t <= 1.0)
+	{
+		Point p = getPoint(s);
+		intersection.setX(p.getX());
+		intersection.setY(p.getY());
+		return true;
+	}
+	return false;
+}
 
-	double det = v1x * v2y - v1y * v2x;
+// Protected method
 
-	if (std::abs(det) < glm::epsilon<double>())
-		return false; // Paralelos
+bool Line::intersects(Vect2d& c, Vect2d& d, double& s, double& t)
+{
+	double xAB = _dest.getX() - _orig.getX();
+	double yAB = _dest.getY() - _orig.getY();
+	double xCD = d.getX() - c.getX();
+	double yCD = d.getY() - c.getY();
+	double xAC = c.getX() - _orig.getX();
+	double yAC = c.getY() - _orig.getY();
 
-	double t = ((C.getX() - A.getX()) * v2y - (C.getY() - A.getY()) * v2x) / det;
-	double s = ((C.getX() - A.getX()) * v1y - (C.getY() - A.getY()) * v1x) / det;
+	double denom = xCD * yAB - xAB * yCD;
 
-	// El segmento requiere 0 <= s <= 1
-	if (s < 0.0 || s > 1.0)
-		return false;
+	if (BasicGeometry::equal(xCD * yAB, xAB * yCD))
+		return false; // Rectas paralelas
 
-	intersection.setX(A.getX() + t * v1x);
-	intersection.setY(A.getY() + t * v1y);
+	s = (xCD * yAC - xAC * yCD) / denom;
+	t = (xAB * yAC - xAC * yAB) / denom;
 
+	// Para una recta, s puede tomar cualquier valor (no hay restriccion)
 	return true;
 }
 

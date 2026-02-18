@@ -99,37 +99,12 @@ bool Polygon::intersects(Line& line, Vect2d& interseccion)
 
 bool Polygon::intersects(RayLine& ray, Vect2d& interseccion)
 {
-
     for (int i = 0; i < _vertices.size(); i++)
     {
         SegmentLine edge = getEdge(i);
 
-        Point A = ray.getA();
-        Point B = ray.getB();
-        Point C = edge.getA();
-        Point D = edge.getB();
-
-        // Vectores directores
-        double vRayX = B.getX() - A.getX();
-        double vRayY = B.getY() - A.getY();
-        double vSegX = D.getX() - C.getX();
-        double vSegY = D.getY() - C.getY();
-
-        // Determinante (producto cruzado 2D)
-        double det = vRayX * vSegY - vRayY * vSegX;
-
-        if (std::abs(det) > 1e-9) { // No son paralelos
-            // Parametros t (rayo) y u (segmento)
-            double t = ((C.getX() - A.getX()) * vSegY - (C.getY() - A.getY()) * vSegX) / det;
-            double u = ((C.getX() - A.getX()) * vRayY - (C.getY() - A.getY()) * vRayX) / det;
-
-            // Condiciones: Rayo (t >= 0), Segmento (0 <= u <= 1)
-            if (t >= 0.0 && u >= 0.0 && u <= 1.0) {
-                // Calculamos el punto
-                interseccion.setX(A.getX() + t * vRayX);
-                interseccion.setY(A.getY() + t * vRayY);
-                return true;
-            }
+        if (edge.intersects(ray, interseccion)) {
+            return true;
         }
     }
     return false;
@@ -141,27 +116,8 @@ bool Polygon::intersects(SegmentLine& segment, Vect2d& interseccion)
     {
         SegmentLine edge = getEdge(i);
 
-        if (edge.segmentIntersection(segment))
-        {
-
-            Point A = segment.getA();
-            Point B = segment.getB();
-            Point C = edge.getA();
-            Point D = edge.getB();
-
-            double v1x = B.getX() - A.getX();
-            double v1y = B.getY() - A.getY();
-            double v2x = D.getX() - C.getX();
-            double v2y = D.getY() - C.getY();
-
-            double det = v1x * v2y - v1y * v2x;
-
-            if (std::abs(det) > 1e-9) {
-                double t = ((C.getX() - A.getX()) * v2y - (C.getY() - A.getY()) * v2x) / det;
-                interseccion.setX(A.getX() + t * v1x);
-                interseccion.setY(A.getY() + t * v1y);
-                return true;
-            }
+        if (edge.intersects(segment, interseccion)) {
+            return true;
         }
     }
     return false;
