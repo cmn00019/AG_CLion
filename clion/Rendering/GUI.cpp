@@ -302,6 +302,22 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			_fileDialog = FileDialog::OPEN_MESH;
 		}
 
+		ImGui::SameLine();
+		if (ImGui::Button("PR1 A"))
+		{
+			sceneContent->clearScene();
+			sceneContent->buildPr1a();
+			_modelCompSelected = nullptr;
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("PR1 B"))
+		{
+			sceneContent->clearScene();
+			sceneContent->buildPr1b();
+			_modelCompSelected = nullptr;
+		}
+
 		GuiUtilities::leaveSpace(2);
 		ImGui::BeginChild("Components", ImVec2(200, 0), true);
 

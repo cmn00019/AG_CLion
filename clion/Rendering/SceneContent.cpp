@@ -13,46 +13,14 @@
 
 // ----------------------------- BUILD YOUR SCENARIO HERE -----------------------------------
 
+void AlgGeom::SceneContent::clearScene()
+{
+    _model.clear();
+    _sceneAABB = AABB();
+}
+
 void AlgGeom::SceneContent::buildScenario()
 {
-    int opcion = -1;
-
-    while (opcion != 0)
-    {
-        std::cout << "\n========================================" << std::endl;
-        std::cout << "  Seleccione practica:" << std::endl;
-        std::cout << "  1. Practica 1a" << std::endl;
-        std::cout << "  2. Practica 1b" << std::endl;
-        std::cout << "  0. Iniciar renderizado" << std::endl;
-        std::cout << "========================================" << std::endl;
-        std::cout << "Opcion: ";
-        std::cin >> opcion;
-
-        if (opcion == 1 || opcion == 2)
-        {
-            // Limpiar modelos anteriores
-            _model.clear();
-            _sceneAABB = AABB();
-        }
-
-        switch (opcion)
-        {
-        case 1:
-            buildPr1a();
-            std::cout << "\nPractica 1a cargada. Puede seleccionar otra o pulsar 0 para renderizar." << std::endl;
-            break;
-        case 2:
-            buildPr1b();
-            std::cout << "\nPractica 1b cargada. Puede seleccionar otra o pulsar 0 para renderizar." << std::endl;
-            break;
-        case 0:
-            std::cout << "Iniciando renderizado..." << std::endl;
-            break;
-        default:
-            std::cout << "Opcion no valida." << std::endl;
-            break;
-        }
-    }
 }
 
 // ============================== PRACTICA 1A ==============================
