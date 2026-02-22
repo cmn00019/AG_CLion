@@ -234,17 +234,22 @@ void AlgGeom::SceneContent::buildPr1b()
     // ====================================================
     // EJERCICIO 2: Distancias vertices del poligono
     // ====================================================
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "DISTANCIAS VERTICES DEL POLIGONO P1" << std::endl;
+    std::cout << "========================================" << std::endl;
     for (int i = 0; i < P1.getNumVertices(); i++)
     {
         Vertex v = P1.getVertexAt(i);
         Vect2d vp(v.getX(), v.getY());
 
-        S1.distPointSegment(vp);
-        S2.distPointSegment(vp);
-        R1.distPointRay(vp);
-        R2.distPointRay(vp);
-        L1.distancePointLine(vp);
-        L2.distancePointLine(vp);
+        std::cout << "--- Vertice " << i << " (" << v.getX() << ", " << v.getY() << ") ---" << std::endl;
+        std::cout << "  Distancia al Segmento S1: " << S1.distPointSegment(vp) << std::endl;
+        std::cout << "  Distancia al Segmento S2: " << S2.distPointSegment(vp) << std::endl;
+        std::cout << "  Distancia al Rayo R1:     " << R1.distPointRay(vp) << std::endl;
+        std::cout << "  Distancia al Rayo R2:     " << R2.distPointRay(vp) << std::endl;
+        std::cout << "  Distancia a la Recta L1:  " << L1.distancePointLine(vp) << std::endl;
+        std::cout << "  Distancia a la Recta L2:  " << L2.distancePointLine(vp) << std::endl;
+        std::cout << "----------------------------------------" << std::endl;
     }
 
     // ====================================================
