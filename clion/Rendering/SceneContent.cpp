@@ -8,11 +8,56 @@
 #include "RandomUtilities.h"
 #include <algorithm>
 #include <vector>
+#include <iostream>
 
 
 // ----------------------------- BUILD YOUR SCENARIO HERE -----------------------------------
 
 void AlgGeom::SceneContent::buildScenario()
+{
+    int opcion = -1;
+
+    while (opcion != 0)
+    {
+        std::cout << "\n========================================" << std::endl;
+        std::cout << "  Seleccione practica:" << std::endl;
+        std::cout << "  1. Practica 1a" << std::endl;
+        std::cout << "  2. Practica 1b" << std::endl;
+        std::cout << "  0. Iniciar renderizado" << std::endl;
+        std::cout << "========================================" << std::endl;
+        std::cout << "Opcion: ";
+        std::cin >> opcion;
+
+        if (opcion == 1 || opcion == 2)
+        {
+            // Limpiar modelos anteriores
+            _model.clear();
+            _sceneAABB = AABB();
+        }
+
+        switch (opcion)
+        {
+        case 1:
+            buildPr1a();
+            std::cout << "\nPractica 1a cargada. Puede seleccionar otra o pulsar 0 para renderizar." << std::endl;
+            break;
+        case 2:
+            buildPr1b();
+            std::cout << "\nPractica 1b cargada. Puede seleccionar otra o pulsar 0 para renderizar." << std::endl;
+            break;
+        case 0:
+            std::cout << "Iniciando renderizado..." << std::endl;
+            break;
+        default:
+            std::cout << "Opcion no valida." << std::endl;
+            break;
+        }
+    }
+}
+
+// ============================== PRACTICA 1A ==============================
+
+void AlgGeom::SceneContent::buildPr1a()
 {
     // ====================================================
     // EJERCICIO 1: Nube de 200 puntos aleatorios (disco)
@@ -26,7 +71,7 @@ void AlgGeom::SceneContent::buildScenario()
     }
     cloud.save("../../nube_puntos.txt");
 
-    // Dibujar nube en amarillo dorado
+    // Dibujar nube en azul
     this->addNewModel((new DrawPointCloud(cloud))->setPointColor(vec4(0.0f, 0.0f, 1.0f, 1.0f))->overrideModelName());
 
     // ====================================================
@@ -145,6 +190,201 @@ void AlgGeom::SceneContent::buildScenario()
 
         Circle circunscrito = triangulo.getCirumscribed();
         this->addNewModel((new DrawCircle(circunscrito))->setLineColor(vec4(0.0f, 0.0f, 0.0f, 1.0f))->setTriangleColor(vec4(0.0f, 0.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
+    }
+}
+
+// ============================== PRACTICA 1B ==============================
+
+void AlgGeom::SceneContent::buildPr1b()
+{
+    // ====================================================
+    // EJERCICIO 1: Definir primitivas con intersecciones
+    // L1-L2, S1-S2, S1-R1, L1-P, R2-P
+    // ====================================================
+
+    // Definir primitivas que se crucen apropiadamente
+    SegmentLine S1(Point(-3, -1), Point(3, 3));     // Segmento diagonal
+    SegmentLine S2(Point(-2, 3), Point(2, -1));      // Segmento que cruza S1
+    RayLine R1(Point(-4, 1), Point(4, 1));           // Rayo horizontal que cruza S1
+    RayLine R2(Point(4, -2), Point(-4, 4));          // Rayo que cruza el poligono
+    Line L1(Point(-5, -3), Point(5, 5));             // Recta diagonal
+    Line L2(Point(-5, 4), Point(5, -2));             // Recta que cruza L1
+
+    // Poligono P1 (cuadrado para facilitar intersecciones)
+    Polygon P1;
+    P1.add(Point(-2, -2));
+    P1.add(Point(2, -2));
+    P1.add(Point(2, 2));
+    P1.add(Point(-2, 2));
+
+    // Dibujar primitivas
+    this->addNewModel((new DrawSegment(S1))->setLineColor(vec4(1.0f, 0.0f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));   // rojo
+    this->addNewModel((new DrawSegment(S2))->setLineColor(vec4(1.0f, 0.5f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));   // naranja
+    this->addNewModel((new DrawRay(R1))->setLineColor(vec4(0.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));       // verde
+    this->addNewModel((new DrawRay(R2))->setLineColor(vec4(0.0f, 0.8f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));       // verde oscuro
+    this->addNewModel((new DrawLine(L1))->setLineColor(vec4(0.0f, 0.0f, 1.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));      // azul
+    this->addNewModel((new DrawLine(L2))->setLineColor(vec4(0.5f, 0.0f, 1.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));      // violeta
+    this->addNewModel((new DrawPolygon(P1))->setTriangleColor(vec4(0.0f, 1.0f, 1.0f, 0.3f))->overrideModelName());                   // cyan
+
+    Vect2d intersection;
+
+    // L1-L2
+    if (L1.intersects(L2, intersection))
+    {
+        Point pi(intersection.getX(), intersection.getY());
+        this->addNewModel((new DrawPoint(pi))->setPointColor(vec4(1.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(8.0f));
+    }
+
+    // S1-S2
+    if (S1.intersects(S2, intersection))
+    {
+        Point pi(intersection.getX(), intersection.getY());
+        this->addNewModel((new DrawPoint(pi))->setPointColor(vec4(1.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(8.0f));
+    }
+
+    // S1-R1
+    if (S1.intersects(R1, intersection))
+    {
+        Point pi(intersection.getX(), intersection.getY());
+        this->addNewModel((new DrawPoint(pi))->setPointColor(vec4(1.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(8.0f));
+    }
+
+    // L1-P1
+    if (P1.intersects(L1, intersection))
+    {
+        Point pi(intersection.getX(), intersection.getY());
+        this->addNewModel((new DrawPoint(pi))->setPointColor(vec4(1.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(8.0f));
+    }
+
+    // R2-P1
+    if (P1.intersects(R2, intersection))
+    {
+        Point pi(intersection.getX(), intersection.getY());
+        this->addNewModel((new DrawPoint(pi))->setPointColor(vec4(1.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(8.0f));
+    }
+
+    // ====================================================
+    // EJERCICIO 2: Distancias vertices del poligono
+    // ====================================================
+    for (int i = 0; i < P1.getNumVertices(); i++)
+    {
+        Vertex v = P1.getVertexAt(i);
+        Vect2d vp(v.getX(), v.getY());
+
+        S1.distPointSegment(vp);
+        S2.distPointSegment(vp);
+        R1.distPointRay(vp);
+        R2.distPointRay(vp);
+        L1.distancePointLine(vp);
+        L2.distancePointLine(vp);
+    }
+
+    // ====================================================
+    // EJERCICIO 3: Circulos y relaciones
+    // ====================================================
+    Circle C1(Point(0, 0), 3.0);
+    Circle C2(Point(4, 0), 2.0);
+
+    // Dibujar circulos
+    this->addNewModel((new DrawCircle(C1))->setLineColor(vec4(1.0f, 0.0f, 1.0f, 1.0f))->setTriangleColor(vec4(0.0f, 0.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
+    this->addNewModel((new DrawCircle(C2))->setLineColor(vec4(0.0f, 1.0f, 1.0f, 1.0f))->setTriangleColor(vec4(0.0f, 0.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
+
+    // Relacion entre circulos
+    C1.relacionaCir(C2);
+
+    // Relacion circulos con rectas
+    C1.relacionaLine(L1);
+    C1.relacionaLine(L2);
+    C2.relacionaLine(L1);
+    C2.relacionaLine(L2);
+
+    // ====================================================
+    // EJERCICIO 4: Intersecciones circulo-primitivas
+    // ====================================================
+    Vect2d p1, p2;
+
+    // C1 con L1
+    RelationCircleLine relC1L1 = C1.intersect(L1, p1, p2);
+    if (relC1L1 == INTERSECT)
+    {
+        Point pi1(p1.getX(), p1.getY()); Point pi2(p2.getX(), p2.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(1.0f, 0.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+        this->addNewModel((new DrawPoint(pi2))->setPointColor(vec4(1.0f, 0.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+    }
+    else if (relC1L1 == TANGENTS)
+    {
+        Point pi1(p1.getX(), p1.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(1.0f, 0.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+    }
+
+    // C1 con L2
+    RelationCircleLine relC1L2 = C1.intersect(L2, p1, p2);
+    if (relC1L2 == INTERSECT)
+    {
+        Point pi1(p1.getX(), p1.getY()); Point pi2(p2.getX(), p2.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(1.0f, 0.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+        this->addNewModel((new DrawPoint(pi2))->setPointColor(vec4(1.0f, 0.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+    }
+    else if (relC1L2 == TANGENTS)
+    {
+        Point pi1(p1.getX(), p1.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(1.0f, 0.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+    }
+
+    // C2 con L1
+    RelationCircleLine relC2L1 = C2.intersect(L1, p1, p2);
+    if (relC2L1 == INTERSECT)
+    {
+        Point pi1(p1.getX(), p1.getY()); Point pi2(p2.getX(), p2.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(0.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+        this->addNewModel((new DrawPoint(pi2))->setPointColor(vec4(0.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+    }
+    else if (relC2L1 == TANGENTS)
+    {
+        Point pi1(p1.getX(), p1.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(0.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+    }
+
+    // C2 con L2
+    RelationCircleLine relC2L2 = C2.intersect(L2, p1, p2);
+    if (relC2L2 == INTERSECT)
+    {
+        Point pi1(p1.getX(), p1.getY()); Point pi2(p2.getX(), p2.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(0.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+        this->addNewModel((new DrawPoint(pi2))->setPointColor(vec4(0.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+    }
+    else if (relC2L2 == TANGENTS)
+    {
+        Point pi1(p1.getX(), p1.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(0.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+    }
+
+    // C1 con S1
+    RelationCircleLine relC1S1 = C1.intersect(S1, p1, p2);
+    if (relC1S1 == INTERSECT)
+    {
+        Point pi1(p1.getX(), p1.getY()); Point pi2(p2.getX(), p2.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(1.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+        this->addNewModel((new DrawPoint(pi2))->setPointColor(vec4(1.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+    }
+    else if (relC1S1 == TANGENTS)
+    {
+        Point pi1(p1.getX(), p1.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(1.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+    }
+
+    // C1 con R1
+    RelationCircleLine relC1R1 = C1.intersect(R1, p1, p2);
+    if (relC1R1 == INTERSECT)
+    {
+        Point pi1(p1.getX(), p1.getY()); Point pi2(p2.getX(), p2.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(1.0f, 0.5f, 0.5f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+        this->addNewModel((new DrawPoint(pi2))->setPointColor(vec4(1.0f, 0.5f, 0.5f, 1.0f))->overrideModelName()->setPointSize(10.0f));
+    }
+    else if (relC1R1 == TANGENTS)
+    {
+        Point pi1(p1.getX(), p1.getY());
+        this->addNewModel((new DrawPoint(pi1))->setPointColor(vec4(1.0f, 0.5f, 0.5f, 1.0f))->overrideModelName()->setPointSize(10.0f));
     }
 }
 

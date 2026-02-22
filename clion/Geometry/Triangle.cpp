@@ -42,25 +42,22 @@ Circle Triangle::getInscribed() {
 }
 
 Circle Triangle::getCirumscribed() {
-    double ax = _a.getX(), ay = _a.getY();
-    double bx = _b.getX(), by = _b.getY();
-    double cx = _c.getX(), cy = _c.getY();
+    double xAB = _b.getX() - _a.getX(), yAB = _b.getY() - _a.getY();
+    double xAC = _c.getX() - _a.getX(), yAC = _c.getY() - _a.getY();
 
-    double D = 2.0 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+    double b2 = xAC * xAC + yAC * yAC;  // |AC|^2
+    double c2 = xAB * xAB + yAB * yAB;  // |AB|^2
 
-    if (std::abs(D) < glm::epsilon<double>())
-        return Circle(Point(ax, ay), 0.0);
+    double areaTri = _a.triangleArea2(_b, _c);  // 2 * area con signo
+    double den = 2.0 * areaTri;                  // 4 * AreaTri
 
-    double ax2ay2 = ax * ax + ay * ay;
-    double bx2by2 = bx * bx + by * by;
-    double cx2cy2 = cx * cx + cy * cy;
+    double xP = _a.getX() + (yAC * c2 - yAB * b2) / den;
+    double yP = _a.getY() + (b2 * xAB - c2 * xAC) / den;
 
-    double center_x = (ax2ay2 * (by - cy) + bx2by2 * (cy - ay) + cx2cy2 * (ay - by)) / D;
-    double center_y = (ax2ay2 * (cx - bx) + bx2by2 * (ax - cx) + cx2cy2 * (bx - ax)) / D;
+    double a = _b.distance(_c);
+    double b = _a.distance(_c);
+    double c = _a.distance(_b);
+    double R = (a * b * c) / (2.0 * std::abs(areaTri));
 
-    Point center(center_x, center_y);
-    Point vertA(ax, ay);
-    double radius = center.distance(vertA);
-
-    return Circle(center, radius);
+    return Circle(Point(xP, yP), R);
 }
