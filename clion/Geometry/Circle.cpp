@@ -91,11 +91,6 @@ RelationCircleLine Circle::relacionaLine(Line& l)
 
 RelationCircleLine Circle::intersect(Line& l, Vect2d& pinter1, Vect2d& pinter2)
 {
-    // L = P + t * d, con P = l.getA(), d = l.getB() - l.getA()
-    // |X - C|^2 = r^2
-    // Delta = P - C
-    // delta = (d . Delta)^2 - |d|^2 * (|Delta|^2 - r^2)
-    // t = (-d . Delta +- sqrt(delta)) / |d|^2
 
     // d = B - A (vector director)
     Vect2d d(l.getB().getX() - l.getA().getX(), l.getB().getY() - l.getA().getY());
@@ -258,4 +253,27 @@ RelationCircleLine Circle::intersect(RayLine& r, Vect2d& pinter1, Vect2d& pinter
     if (count == 0) return NO_INTERSECT;
     if (count == 1) { pinter2 = pinter1; return TANGENTS; }
     return INTERSECT;
+}
+
+std::string Circle::getStringEnum(RelationCircleLine nombre)
+{
+    switch (nombre)
+    {
+    case 0: return "INTERSECT";
+    case 1: return "TANGENTS";
+    case 2: return "NO_INTERSECT";
+    }
+}
+
+std::string Circle::getStringEnum(RelationCircles nombre)
+{
+    switch (nombre)
+    {
+    case 0: return "CONCENTRIC";
+    case 1: return "EXTERAL";
+    case 2: return "INTERNAL";
+    case 3: return "SECANT";
+    case 4: return "INTERIOR_TANG";
+    case 5: return "EXTERNAL_TANG";
+    }
 }

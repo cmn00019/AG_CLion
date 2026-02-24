@@ -36,7 +36,6 @@ Point::PointClassification Point::classify(Point & p0, Point & p1)
 	Point a(p1._x - p0._x, p1._y - p0._y);
 	Point b(_x - p0._x, _y - p0._y);
 
-	// Calculamos el producto cruzado en 2D (determinante) para ver la orientación
 	double sa = a._x * b._y - b._x * a._y;
 
 	if (sa > 0.0)
@@ -61,7 +60,7 @@ Point::PointClassification Point::classify(Point & p0, Point & p1)
 	if (_x == p1._x && _y == p1._y)
 		return PointClassification::DEST;
 
-	// 5. Si no es nada de lo anterior, está "EN MEDIO" (BETWEEN)
+	// 5. Si no es nada de lo anterior, está "EN MEDIO"
 	return PointClassification::BETWEEN;
 }
 

@@ -34,7 +34,7 @@ double Line::distancePointLine(Vect2d& v)
 
 	double t0 = d.dot(ap) / dd;
 
-	// D = |A - (P + t0*d)| (para la recta, siempre se usa la proyeccion)
+	// D = |A - (P + t0*d)|
 	Vect2d proj = Vect2d(_orig) + d.scalarMult(t0);
 	return v.distance(proj);
 }
@@ -109,7 +109,7 @@ bool Line::intersects(Vect2d& c, Vect2d& d, double& s, double& t)
 	s = (xCD * yAC - xAC * yCD) / denom;
 	t = (xAB * yAC - xAC * yAB) / denom;
 
-	// Para una recta, s puede tomar cualquier valor (no hay restriccion)
+	// Para una recta, s puede tomar cualquier valor
 	return true;
 }
 
@@ -137,8 +137,6 @@ std::ostream& operator<<(std::ostream& os, const Line& line)
 
 bool Line::segmentIntersection(SegmentLine& l)
 {
-	// Override: para una recta, solo comprobamos que C y D están en lados opuestos
-	// No necesitamos la segunda condición (A,B respecto a CD) porque la recta es infinita
 	Point c = l.getA();
 	Point d = l.getB();
 

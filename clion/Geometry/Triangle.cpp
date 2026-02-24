@@ -45,11 +45,11 @@ Circle Triangle::getCirumscribed() {
     double xAB = _b.getX() - _a.getX(), yAB = _b.getY() - _a.getY();
     double xAC = _c.getX() - _a.getX(), yAC = _c.getY() - _a.getY();
 
-    double b2 = xAC * xAC + yAC * yAC;  // |AC|^2
-    double c2 = xAB * xAB + yAB * yAB;  // |AB|^2
+    double b2 = xAC * xAC + yAC * yAC;
+    double c2 = xAB * xAB + yAB * yAB;
 
-    double areaTri = _a.triangleArea2(_b, _c);  // 2 * area con signo
-    double den = 2.0 * areaTri;                  // 4 * AreaTri
+    double areaTri = _a.triangleArea2(_b, _c);
+    double den = 2.0 * areaTri;
 
     double xP = _a.getX() + (yAC * c2 - yAB * b2) / den;
     double yP = _a.getY() + (b2 * xAB - c2 * xAC) / den;

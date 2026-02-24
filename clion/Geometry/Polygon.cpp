@@ -12,7 +12,6 @@ Polygon::Polygon(const Polygon& Polygon)
 {
     _vertices = std::vector<Vertex>(Polygon._vertices);
 
-    // Actualizar el doble enlace: los vértices copiados deben apuntar a this
     for (size_t i = 0; i < _vertices.size(); i++)
     {
         _vertices[i].setPolygon(this);
@@ -24,7 +23,6 @@ Polygon::Polygon(std::vector<Vertex>& vertices)
 {
     _vertices = std::vector<Vertex>(vertices);
 
-    // Actualizar el doble enlace: los vértices deben apuntar a this
     for (size_t i = 0; i < _vertices.size(); i++)
     {
         _vertices[i].setPolygon(this);
@@ -218,7 +216,6 @@ Polygon & Polygon::operator=(const Polygon &polygon)
     {
        this->_vertices = polygon._vertices;
 
-       // Actualizar el doble enlace tras la copia
        for (size_t i = 0; i < _vertices.size(); i++)
        {
            _vertices[i].setPolygon(this);

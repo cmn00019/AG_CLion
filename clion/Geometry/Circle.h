@@ -82,4 +82,7 @@ public:
     *   @brief Intersects this circle with a ray (t>=0).
     */
     RelationCircleLine intersect(RayLine& r, Vect2d& pinter1, Vect2d& pinter2);
+
+	static std::string getStringEnum (RelationCircleLine nombre);
+	static std::string getStringEnum (RelationCircles nombre);
 };

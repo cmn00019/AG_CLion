@@ -28,7 +28,7 @@ void AlgGeom::SceneContent::buildScenario()
 void AlgGeom::SceneContent::buildPr1a()
 {
     // ====================================================
-    // EJERCICIO 1: Nube de 200 puntos aleatorios (disco)
+    // EJERCICIO 1: Nube de 200 puntos aleatorios
     // ====================================================
     PointCloud cloud;
     float radioNube = 5.0f;
@@ -39,7 +39,7 @@ void AlgGeom::SceneContent::buildPr1a()
     }
     cloud.save("../../nube_puntos.txt");
 
-    // Dibujar nube en azul
+    // Dibujar nube
     this->addNewModel((new DrawPointCloud(cloud))->setPointColor(vec4(0.0f, 0.0f, 1.0f, 1.0f))->overrideModelName());
 
     // ====================================================
@@ -137,7 +137,7 @@ void AlgGeom::SceneContent::buildPr1a()
     }
 
     // ====================================================
-    // EJERCICIO 5: Triangulo + inscrito + circunscrito
+    // EJERCICIO 5: Triangulo , inscrito , circunscrito
     // ====================================================
     {
         int ti1 = RandomUtilities::getUniformRandomInt(0, numPuntos);
@@ -170,7 +170,6 @@ void AlgGeom::SceneContent::buildPr1b()
     // L1-L2, S1-S2, S1-R1, L1-P, R2-P
     // ====================================================
 
-    // Definir primitivas que se crucen apropiadamente
     SegmentLine S1(Point(-3, -1), Point(3, 3));     // Segmento diagonal
     SegmentLine S2(Point(-2, 3), Point(2, -1));      // Segmento que cruza S1
     RayLine R1(Point(-4, 1), Point(4, 1));           // Rayo horizontal que cruza S1
@@ -178,14 +177,14 @@ void AlgGeom::SceneContent::buildPr1b()
     Line L1(Point(-5, -3), Point(5, 5));             // Recta diagonal
     Line L2(Point(-5, 4), Point(5, -2));             // Recta que cruza L1
 
-    // Poligono P1 (cuadrado para facilitar intersecciones)
+    // Poligono P1
     Polygon P1;
     P1.add(Point(-2, -2));
     P1.add(Point(2, -2));
     P1.add(Point(2, 2));
     P1.add(Point(-2, 2));
 
-    // Dibujar primitivas
+
     this->addNewModel((new DrawSegment(S1))->setLineColor(vec4(1.0f, 0.0f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));   // rojo
     this->addNewModel((new DrawSegment(S2))->setLineColor(vec4(1.0f, 0.5f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));   // naranja
     this->addNewModel((new DrawRay(R1))->setLineColor(vec4(0.0f, 1.0f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));       // verde
@@ -262,14 +261,27 @@ void AlgGeom::SceneContent::buildPr1b()
     this->addNewModel((new DrawCircle(C1))->setLineColor(vec4(1.0f, 0.0f, 1.0f, 1.0f))->setTriangleColor(vec4(0.0f, 0.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
     this->addNewModel((new DrawCircle(C2))->setLineColor(vec4(0.0f, 1.0f, 1.0f, 1.0f))->setTriangleColor(vec4(0.0f, 0.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
 
+    std::cout << "\n========================================" << std::endl;
+    std::cout << "RELACIONES CIRCULOS - LINEAS Y CIRCULOS " << std::endl;
+    std::cout << "========================================" << std::endl;
+
     // Relacion entre circulos
-    C1.relacionaCir(C2);
+    RelationCircles cc = C1.relacionaCir(C2);
+
+    std::cout << "RELACION C1-C2: " << Circle::getStringEnum(cc) << std::endl;
 
     // Relacion circulos con rectas
-    C1.relacionaLine(L1);
-    C1.relacionaLine(L2);
-    C2.relacionaLine(L1);
-    C2.relacionaLine(L2);
+    RelationCircleLine cl = C1.relacionaLine(L1);
+    std::cout << "RELACION C1-L1: " << Circle::getStringEnum(cl) << std::endl;
+
+    cl = C1.relacionaLine(L2);
+    std::cout << "RELACION C1-L2: " << Circle::getStringEnum(cl) << std::endl;
+
+    cl = C2.relacionaLine(L1);
+    std::cout << "RELACION C2-L1: " << Circle::getStringEnum(cl) << std::endl;
+
+    cl = C2.relacionaLine(L2);
+    std::cout << "RELACION C2-L2: " << Circle::getStringEnum(cl) << std::endl;
 
     // ====================================================
     // EJERCICIO 4: Intersecciones circulo-primitivas

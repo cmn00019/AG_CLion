@@ -3,13 +3,11 @@
 #include "RandomUtilities.h" // Incluimos la utilidad de aleatorios
 #include <fstream>
 #include <limits>
-#include <algorithm> // Para std::min y std::max
 
 PointCloud::PointCloud()
 {
 }
 
-// Constructor aleatorio usando RandomUtilities
 PointCloud::PointCloud(int size, float max_x, float max_y)
 {
     _points.reserve(size);

@@ -38,8 +38,6 @@ bool Vertex::convex()
 	Point thisP = this->getPoint();
 	Point nextP = nxt.getPoint();
 
-	// Misma fórmula que Polygon::convex(): curr.triangleArea2(next, prev)
-	// Para CCW, cross > 0 indica vértice convexo
 	double cross = thisP.triangleArea2(nextP, prevP);
 	return cross > 0;
 }

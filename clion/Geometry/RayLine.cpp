@@ -39,12 +39,11 @@ double RayLine::distPointRay(Vect2d& vector)
 		// Punto mas cercano es P (_orig)
 		return vector.distance(_orig);
 	}
-	else
-	{
-		// Punto mas cercano es P + t0 * d
-		Vect2d proj = Vect2d(_orig) + d.scalarMult(t0);
-		return vector.distance(proj);
-	}
+
+	// Punto mas cercano es P + t0 * d
+	Vect2d proj = Vect2d(_orig) + d.scalarMult(t0);
+	return vector.distance(proj);
+
 }
 
 bool RayLine::incorrectSegmentIntersection(SegmentLine& segment)

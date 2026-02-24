@@ -80,7 +80,6 @@ double SegmentLine::distPointSegment(Vect2d& vector)
 
 	if (BasicGeometry::equal(dd, 0.0))
 	{
-		// (longitud 0)
 		return vector.distance(_orig);
 	}
 
@@ -88,12 +87,12 @@ double SegmentLine::distPointSegment(Vect2d& vector)
 
 	if (t0 <= 0.0)
 	{
-		// Punto mas cercano es P (_orig)
+		// Punto mas cercano es P
 		return vector.distance(_orig);
 	}
 	else if (t0 >= 1.0)
 	{
-		// Punto mas cercano es Q (_dest)
+		// Punto mas cercano es Q
 		return vector.distance(_dest);
 	}
 	else
@@ -126,25 +125,25 @@ bool SegmentLine::impSegmentIntersection(SegmentLine& segment)
 
 	Point::PointClassification cl;
 
-	// 1. ¿Está C contenido en AB?
+	// Está C contenido en AB?
 	cl = c.classify(a, b);
 	if (cl == Point::PointClassification::BETWEEN ||
 		cl == Point::PointClassification::ORIGIN ||
 		cl == Point::PointClassification::DEST) return true;
 
-	// 2. ¿Está D contenido en AB?
+	// Está D contenido en AB?
 	cl = d.classify(a, b);
 	if (cl == Point::PointClassification::BETWEEN ||
 		cl == Point::PointClassification::ORIGIN ||
 		cl == Point::PointClassification::DEST) return true;
 
-	// 3. ¿Está A contenido en CD?
+	// Está A contenido en CD?
 	cl = a.classify(c, d);
 	if (cl == Point::PointClassification::BETWEEN ||
 		cl == Point::PointClassification::ORIGIN ||
 		cl == Point::PointClassification::DEST) return true;
 
-	// 4. ¿Está B contenido en CD?
+	// Está B contenido en CD?
 	cl = b.classify(c, d);
 	if (cl == Point::PointClassification::BETWEEN ||
 		cl == Point::PointClassification::ORIGIN ||
@@ -204,9 +203,6 @@ float SegmentLine::getDistanceT0(Vect2d& point)
 
 bool SegmentLine::intersects(Vect2d& c, Vect2d& d, double& s, double& t)
 {
-	// A = _orig, B = _dest (segmento this)
-	// C = c, D = d (la otra linea/segmento/rayo)
-
 	double xAB = _dest.getX() - _orig.getX();
 	double yAB = _dest.getY() - _orig.getY();
 	double xCD = d.getX() - c.getX();
@@ -214,20 +210,17 @@ bool SegmentLine::intersects(Vect2d& c, Vect2d& d, double& s, double& t)
 	double xAC = c.getX() - _orig.getX();
 	double yAC = c.getY() - _orig.getY();
 
-	// Denominador comun
 	double denom = xCD * yAB - xAB * yCD;
 
-	// Si el denominador es ~0, las rectas son paralelas
 	if (BasicGeometry::equal(xCD * yAB, xAB * yCD))
 		return false;
 
-	// Calcular s (parametro de this: AB)
+	// Calcular s (segmento AB)
 	s = (xCD * yAC - xAC * yCD) / denom;
 
-	// Calcular t (parametro de la otra: CD)
+	// Calcular t (segmento CD)
 	t = (xAB * yAC - xAC * yAB) / denom;
 
-	// s debe estar en [0,1] para que la interseccion caiga en el segmento this
 	if (s < 0.0 || s > 1.0)
 		return false;
 
@@ -242,7 +235,7 @@ bool SegmentLine::intersects(Line& r, Vect2d& res)
 	Vect2d d(r.getB());
 	double s, t;
 
-	// Segmento-Recta: solo necesitamos 0 <= s <= 1 (t sin restriccion)
+	// Segmento-Recta: necesitamos 0 <= s <= 1
 	if (intersects(c, d, s, t))
 	{
 		Point p = getPoint(s);
