@@ -104,22 +104,34 @@ set(SOURCE_FILES
         ${RENDERING}/DrawCircle.h
         ${RENDERING}/DrawLine.cpp
         ${RENDERING}/DrawLine.h
+        ${RENDERING}/DrawLine3d.cpp
+        ${RENDERING}/DrawLine3d.h
         ${RENDERING}/DrawMesh.cpp
         ${RENDERING}/DrawMesh.h
         ${RENDERING}/DrawPlane.cpp
         ${RENDERING}/DrawPlane.h
         ${RENDERING}/DrawPoint.cpp
         ${RENDERING}/DrawPoint.h
+        ${RENDERING}/DrawPoint3d.cpp
+        ${RENDERING}/DrawPoint3d.h
         ${RENDERING}/DrawPointCloud.cpp
         ${RENDERING}/DrawPointCloud.h
+        ${RENDERING}/DrawPointCloud3d.cpp
+        ${RENDERING}/DrawPointCloud3d.h
         ${RENDERING}/DrawPolygon.cpp
         ${RENDERING}/DrawPolygon.h
         ${RENDERING}/DrawRay.cpp
         ${RENDERING}/DrawRay.h
+        ${RENDERING}/DrawRay3d.cpp
+        ${RENDERING}/DrawRay3d.h
         ${RENDERING}/DrawSegment.cpp
         ${RENDERING}/DrawSegment.h
+        ${RENDERING}/DrawSegment3d.cpp
+        ${RENDERING}/DrawSegment3d.h
         ${RENDERING}/DrawTriangle.cpp
         ${RENDERING}/DrawTriangle.h
+        ${RENDERING}/DrawTriangle3d.cpp
+        ${RENDERING}/DrawTriangle3d.h
         ${RENDERING}/DrawVoxelization.cpp
         ${RENDERING}/DrawVoxelization.h
         ${RENDERING}/FBO.cpp

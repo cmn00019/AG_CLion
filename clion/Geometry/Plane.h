@@ -80,6 +80,11 @@ public:
 	double distance(Vect3d& point);
 
 	/**
+	*	@brief Distance between the plane and the point v, also returns the closest point q on the plane. (eq3d_dvp)
+	*/
+	double distance(Vect3d& v, Vect3d& q);
+
+	/**
 	*	@brief Returns A in AX + BY + CZ + D = 0.
 	*/
 	double getA();

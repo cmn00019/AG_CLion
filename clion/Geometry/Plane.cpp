@@ -43,6 +43,20 @@ double Plane::distance(Vect3d & point)
     return std::abs(lambda) * n.module();
 }    
 
+double Plane::distance(Vect3d & v, Vect3d & q)
+{
+    // eq3d_dvp: lambda = -(n*v + d) / (n*n), q = v + lambda*n
+    Vect3d n = getNormal();
+    double d = getD();
+    double nDotV = n.getX() * v.getX() + n.getY() * v.getY() + n.getZ() * v.getZ();
+    double nDotN = n.dot(n);
+    double lambda = -(nDotV + d) / nDotN;
+    Vect3d lambdaN = n.scalarMul(lambda);
+    q = v.add(lambdaN);
+    return std::abs(lambda) * n.module();
+}
+
+
 double Plane::getA()
 {
 	return (BasicGeometry::determinant2x2(_c.getZ() - _a.getZ(), _c.getY() - _a.getY(), _b.getY() - _a.getY(), _b.getZ() - _a.getZ()));
