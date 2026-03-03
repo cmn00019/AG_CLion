@@ -318,6 +318,38 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			_modelCompSelected = nullptr;
 		}
 
+		ImGui::SameLine();
+		if (ImGui::Button("PR2 A"))
+		{
+			sceneContent->clearScene();
+			sceneContent->buildPr2a();
+			_modelCompSelected = nullptr;
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("PR2 B"))
+		{
+			sceneContent->clearScene();
+			sceneContent->buildPr2b();
+			_modelCompSelected = nullptr;
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("PR2 C"))
+		{
+			sceneContent->clearScene();
+			sceneContent->buildPr2c();
+			_modelCompSelected = nullptr;
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("PR2 D"))
+		{
+			sceneContent->clearScene();
+			sceneContent->buildPr2d();
+			_modelCompSelected = nullptr;
+		}
+
 		GuiUtilities::leaveSpace(2);
 		ImGui::BeginChild("Components", ImVec2(200, 0), true);
 

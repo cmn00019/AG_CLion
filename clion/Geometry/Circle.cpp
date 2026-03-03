@@ -263,6 +263,7 @@ std::string Circle::getStringEnum(RelationCircleLine nombre)
     case 1: return "TANGENTS";
     case 2: return "NO_INTERSECT";
     }
+    return "UNKNOWN";
 }
 
 std::string Circle::getStringEnum(RelationCircles nombre)
@@ -276,4 +277,5 @@ std::string Circle::getStringEnum(RelationCircles nombre)
     case 4: return "INTERIOR_TANG";
     case 5: return "EXTERNAL_TANG";
     }
+    return "UNKNOWN";
 }

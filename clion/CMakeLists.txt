@@ -64,6 +64,26 @@ set(SOURCE_FILES
         ${GEOMETRY}/Vect2d.h
         ${GEOMETRY}/Vertex.cpp
         ${GEOMETRY}/Vertex.h
+        ${GEOMETRY}/Edge3d.cpp
+        ${GEOMETRY}/Edge3d.h
+        ${GEOMETRY}/InclDraw3D.h
+        ${GEOMETRY}/InclGeom3D.h
+        ${GEOMETRY}/Line3d.cpp
+        ${GEOMETRY}/Line3d.h
+        ${GEOMETRY}/Plane.cpp
+        ${GEOMETRY}/Plane.h
+        ${GEOMETRY}/PointCloud3d.cpp
+        ${GEOMETRY}/PointCloud3d.h
+        ${GEOMETRY}/Ray3d.cpp
+        ${GEOMETRY}/Ray3d.h
+        ${GEOMETRY}/Segment3d.cpp
+        ${GEOMETRY}/Segment3d.h
+        ${GEOMETRY}/Triangle3d.cpp
+        ${GEOMETRY}/Triangle3d.h
+        ${GEOMETRY}/TriangleModel.cpp
+        ${GEOMETRY}/TriangleModel.h
+        ${GEOMETRY}/Vect3d.cpp
+        ${GEOMETRY}/Vect3d.h
         ${GEOMETRY}/Voxelization.cpp
         ${GEOMETRY}/Voxelization.h
         ${PATTERNS}/Singleton.h
@@ -78,12 +98,16 @@ set(SOURCE_FILES
         ${RENDERING}/CameraGuiAdapter.h
         ${RENDERING}/CameraProjection.cpp
         ${RENDERING}/CameraProjection.h
+        ${RENDERING}/DrawAABB.cpp
+        ${RENDERING}/DrawAABB.h
         ${RENDERING}/DrawCircle.cpp
         ${RENDERING}/DrawCircle.h
         ${RENDERING}/DrawLine.cpp
         ${RENDERING}/DrawLine.h
         ${RENDERING}/DrawMesh.cpp
         ${RENDERING}/DrawMesh.h
+        ${RENDERING}/DrawPlane.cpp
+        ${RENDERING}/DrawPlane.h
         ${RENDERING}/DrawPoint.cpp
         ${RENDERING}/DrawPoint.h
         ${RENDERING}/DrawPointCloud.cpp
