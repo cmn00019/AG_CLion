@@ -467,9 +467,25 @@ void AlgGeom::SceneContent::buildPr2b()
     // Dibujar nube de puntos
     this->addNewModel((new DrawPointCloud3d(cloud))->setPointColor(vec3(0.0f, 0.5f, 1.0f))->overrideModelName()->setPointSize(5.0f));
 
+    // Dibujar aristas de la AABB
+    vec3 cMn = aabb.min(), cMx = aabb.max();
+    vec3 corners[8] = {
+        vec3(cMn.x,cMn.y,cMn.z), vec3(cMx.x,cMn.y,cMn.z), vec3(cMx.x,cMx.y,cMn.z), vec3(cMn.x,cMx.y,cMn.z),
+        vec3(cMn.x,cMn.y,cMx.z), vec3(cMx.x,cMn.y,cMx.z), vec3(cMx.x,cMx.y,cMx.z), vec3(cMn.x,cMx.y,cMx.z)
+    };
+    int edges[12][2] = {{0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}};
+    for (auto& e : edges)
+    {
+        Vect3d eOrig(corners[e[0]].x, corners[e[0]].y, corners[e[0]].z);
+        Vect3d eDest(corners[e[1]].x, corners[e[1]].y, corners[e[1]].z);
+        Segment3d edgeSeg(eOrig, eDest);
+        this->addNewModel((new DrawSegment3d(edgeSeg))->setLineColor(vec3(0.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(4.0f));
+    }
+
     // ====================================================
     // PASO 1: Plano P - tapa superior de la AABB
     // ====================================================
+    // Construir el plano matematico original
     vec3 mx = aabb.max(), mn = aabb.min();
     Vect3d topP1(mn.x, mx.y, mn.z), topP2(mx.x, mx.y, mn.z), topP3(mx.x, mx.y, mx.z);
     Plane planeP(topP1, topP2, topP3, true);
@@ -477,9 +493,9 @@ void AlgGeom::SceneContent::buildPr2b()
     // Dibujar plano P como dos triangulos (tapa superior de la caja)
     Vect3d topP4(mn.x, mx.y, mx.z);
     Triangle3d triTop1(topP1, topP2, topP3);
-    this->addNewModel((new DrawTriangle3d(triTop1))->setTriangleColor(vec4(0.5f, 0.5f, 0.5f, 0.3f))->overrideModelName());
+    this->addNewModel((new DrawTriangle3d(triTop1))->setTriangleColor(vec4(0.8f, 0.8f, 0.8f, 0.15f))->overrideModelName());
     Triangle3d triTop2(topP1, topP3, topP4);
-    this->addNewModel((new DrawTriangle3d(triTop2))->setTriangleColor(vec4(0.5f, 0.5f, 0.5f, 0.3f))->overrideModelName());
+    this->addNewModel((new DrawTriangle3d(triTop2))->setTriangleColor(vec4(0.8f, 0.8f, 0.8f, 0.15f))->overrideModelName());
 
     std::cout << "Plano P (tapa superior AABB): normal = " << planeP.getNormal() << std::endl;
 
@@ -506,8 +522,42 @@ void AlgGeom::SceneContent::buildPr2b()
     Vect3d pA = cloud.getPoint(0), pB = cloud.getPoint(10), pC = cloud.getPoint(20);
     Plane planeA(pA, pB, pC, true);
 
-    // Dibujar plano A con DrawPlane
-    this->addNewModel((new DrawPlane(planeA))->setTriangleColor(vec4(0.0f, 0.8f, 0.8f, 0.3f))->overrideModelName());
+    // Calcular un cuadrado en el plano A del mismo tamaño que la tapa de la AABB
+    Vect3d centerAABB((mx.x + mn.x) / 2.0, (mx.y + mn.y) / 2.0, (mx.z + mn.z) / 2.0);
+    Vect3d projectedCenter;
+    planeA.distance(centerAABB, projectedCenter);
+
+    Vect3d nA = planeA.getNormal();
+    double lenNA = nA.module();
+    if (lenNA > 0.0001) nA = nA.scalarMul(1.0 / lenNA);
+
+    Vect3d pA1;
+    if (std::abs(nA.getX()) > 0.001 || std::abs(nA.getY()) > 0.001)
+        pA1 = Vect3d(-nA.getY(), nA.getX(), 0);
+    else
+        pA1 = Vect3d(1, 0, 0);
+    
+    double lenpA1 = pA1.module();
+    if (lenpA1 > 0.0001) pA1 = pA1.scalarMul(1.0 / lenpA1);
+    
+    Vect3d pA2 = nA.xProduct(pA1);
+    double lenpA2 = pA2.module();
+    if (lenpA2 > 0.0001) pA2 = pA2.scalarMul(1.0 / lenpA2);
+
+    // Hacer el plano A mucho mas grande para ver la interseccion (tamano * 1.5)
+    double sizeX = (mx.x - mn.x) * 1.5;
+    double sizeZ = (mx.z - mn.z) * 1.5;
+
+    Vect3d spA1 = pA1.scalarMul(sizeX), spA2 = pA2.scalarMul(sizeZ);
+    Vect3d tA1 = projectedCenter.add(spA1); Vect3d corA1 = tA1.add(spA2);
+    Vect3d tA2 = projectedCenter.sub(spA1); Vect3d corA2 = tA2.add(spA2);
+    Vect3d tA3 = projectedCenter.sub(spA1); Vect3d corA3 = tA3.sub(spA2);
+    Vect3d tA4 = projectedCenter.add(spA1); Vect3d corA4 = tA4.sub(spA2);
+
+    Triangle3d triA1(corA1, corA2, corA3);
+    this->addNewModel((new DrawTriangle3d(triA1))->setTriangleColor(vec4(0.0f, 0.4f, 1.0f, 0.15f))->overrideModelName());
+    Triangle3d triA2(corA1, corA3, corA4);
+    this->addNewModel((new DrawTriangle3d(triA2))->setTriangleColor(vec4(0.0f, 0.4f, 1.0f, 0.15f))->overrideModelName());
 
     std::cout << "Plano A: definido por puntos 0, 10, 20" << std::endl;
 
@@ -515,7 +565,11 @@ void AlgGeom::SceneContent::buildPr2b()
     Line3d interLine;
     if (planeP.intersect(planeA, interLine))
     {
-        this->addNewModel((new DrawLine3d(interLine))->setLineColor(vec3(1.0f, 1.0f, 0.0f))->overrideModelName()->setLineWidth(3.0f));
+        // Limitar la linea de interseccion para evitar alejar la camara al infinito (-1000 a 1000)
+        Vect3d pInter1 = interLine.getPoint(-20.0);
+        Vect3d pInter2 = interLine.getPoint(20.0);
+        Segment3d segInter(pInter1, pInter2);
+        this->addNewModel((new DrawSegment3d(segInter))->setLineColor(vec3(1.0f, 1.0f, 0.0f))->overrideModelName()->setLineWidth(3.0f));
         std::cout << "Interseccion P-A: linea encontrada" << std::endl;
     }
     else
@@ -529,8 +583,11 @@ void AlgGeom::SceneContent::buildPr2b()
     Vect3d l3a = cloud.getPoint(30), l3b = cloud.getPoint(40);
     Line3d L3(l3a, l3b);
 
-    // Dibujar L3 en magenta
-    this->addNewModel((new DrawLine3d(L3))->setLineColor(vec3(1.0f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));
+    // Dibujar L3 como segmento delimitado en magenta
+    Vect3d pL3_1 = L3.getPoint(-10.0);
+    Vect3d pL3_2 = L3.getPoint(10.0);
+    Segment3d segL3(pL3_1, pL3_2);
+    this->addNewModel((new DrawSegment3d(segL3))->setLineColor(vec3(1.0f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));
 
     Vect3d interPoint;
     if (planeA.intersect(L3, interPoint))
@@ -587,6 +644,10 @@ void AlgGeom::SceneContent::buildPr2b()
     double midZ = (mostA.getZ() + mostB.getZ()) / 2.0;
     Vect3d mid(midX, midY, midZ);
 
+    // Normalizar eqNormal
+    double lenEqN = eqNormal.module();
+    if (lenEqN > 0.0001) eqNormal = eqNormal.scalarMul(1.0 / lenEqN);
+
     // Vectores perpendiculares a la normal
     double na = eqNormal.getX(), nb = eqNormal.getY(), nc = eqNormal.getZ();
     Vect3d perp1;
@@ -594,19 +655,28 @@ void AlgGeom::SceneContent::buildPr2b()
         perp1 = Vect3d(-nb, na, 0);
     else
         perp1 = Vect3d(1, 0, 0);
+    
+    double lenP1 = perp1.module();
+    if (lenP1 > 0.0001) perp1 = perp1.scalarMul(1.0 / lenP1);
+    
     Vect3d perp2 = eqNormal.xProduct(perp1);
+    double lenP2 = perp2.module();
+    if (lenP2 > 0.0001) perp2 = perp2.scalarMul(1.0 / lenP2);
 
-    double scale = 5.0;
-    Vect3d sp1 = perp1.scalarMul(scale), sp2 = perp2.scalarMul(scale);
+    // Hacer el plano Equidistante mucho mas grande
+    double eSizeX = (mx.x - mn.x) * 1.5;
+    double eSizeZ = (mx.z - mn.z) * 1.5;
+
+    Vect3d sp1 = perp1.scalarMul(eSizeX), sp2 = perp2.scalarMul(eSizeZ);
     Vect3d tmp1 = mid.add(sp1); Vect3d ep1 = tmp1.add(sp2);
     Vect3d tmp2 = mid.sub(sp1); Vect3d ep2 = tmp2.add(sp2);
     Vect3d tmp3 = mid.sub(sp1); Vect3d ep3 = tmp3.sub(sp2);
     Vect3d tmp4 = mid.add(sp1); Vect3d ep4 = tmp4.sub(sp2);
 
     Triangle3d eqTri1(ep1, ep2, ep3);
-    this->addNewModel((new DrawTriangle3d(eqTri1))->setTriangleColor(vec4(1.0f, 0.5f, 0.0f, 0.3f))->overrideModelName());
+    this->addNewModel((new DrawTriangle3d(eqTri1))->setTriangleColor(vec4(0.8f, 0.0f, 0.8f, 0.15f))->overrideModelName()); // purpura
     Triangle3d eqTri2(ep1, ep3, ep4);
-    this->addNewModel((new DrawTriangle3d(eqTri2))->setTriangleColor(vec4(1.0f, 0.5f, 0.0f, 0.3f))->overrideModelName());
+    this->addNewModel((new DrawTriangle3d(eqTri2))->setTriangleColor(vec4(0.8f, 0.0f, 0.8f, 0.15f))->overrideModelName()); // purpura
 
     // Dibujar punto medio
     this->addNewModel((new DrawPoint3d(mid))->setPointColor(vec3(1.0f, 0.5f, 0.0f))->overrideModelName()->setPointSize(8.0f));
@@ -627,9 +697,45 @@ void AlgGeom::SceneContent::buildPr2c()
     Vect3d pA = cloud.getPoint(0), pB = cloud.getPoint(10), pC = cloud.getPoint(20);
     Plane planeA(pA, pB, pC, true);
 
-    // Draw plane A
-    Triangle3d triPlaneA2(pA, pB, pC);
-    this->addNewModel((new DrawTriangle3d(triPlaneA2))->setTriangleColor(vec4(0.5f, 0.5f, 0.5f, 0.3f))->overrideModelName());
+    AABB aabb = cloud.getAABB();
+    vec3 mx = aabb.max(), mn = aabb.min();
+
+    // Calcular un cuadrado en el plano A del mismo tamaño que la tapa de la AABB
+    Vect3d centerAABB((mx.x + mn.x) / 2.0, (mx.y + mn.y) / 2.0, (mx.z + mn.z) / 2.0);
+    Vect3d projectedCenter;
+    planeA.distance(centerAABB, projectedCenter);
+
+    Vect3d nA = planeA.getNormal();
+    double lenNA = nA.module();
+    if (lenNA > 0.0001) nA = nA.scalarMul(1.0 / lenNA);
+
+    Vect3d pA1;
+    if (std::abs(nA.getX()) > 0.001 || std::abs(nA.getY()) > 0.001)
+        pA1 = Vect3d(-nA.getY(), nA.getX(), 0);
+    else
+        pA1 = Vect3d(1, 0, 0);
+    
+    double lenpA1 = pA1.module();
+    if (lenpA1 > 0.0001) pA1 = pA1.scalarMul(1.0 / lenpA1);
+    
+    Vect3d pA2 = nA.xProduct(pA1);
+    double lenpA2 = pA2.module();
+    if (lenpA2 > 0.0001) pA2 = pA2.scalarMul(1.0 / lenpA2);
+
+    // Hacer el plano A mucho mas grande para ver la interseccion (tamano * 1.5)
+    double sizeX = (mx.x - mn.x) * 1.5;
+    double sizeZ = (mx.z - mn.z) * 1.5;
+
+    Vect3d spA1 = pA1.scalarMul(sizeX), spA2 = pA2.scalarMul(sizeZ);
+    Vect3d tA1 = projectedCenter.add(spA1); Vect3d corA1 = tA1.add(spA2);
+    Vect3d tA2 = projectedCenter.sub(spA1); Vect3d corA2 = tA2.add(spA2);
+    Vect3d tA3 = projectedCenter.sub(spA1); Vect3d corA3 = tA3.sub(spA2);
+    Vect3d tA4 = projectedCenter.add(spA1); Vect3d corA4 = tA4.sub(spA2);
+
+    Triangle3d triA1(corA1, corA2, corA3);
+    this->addNewModel((new DrawTriangle3d(triA1))->setTriangleColor(vec4(0.0f, 0.4f, 1.0f, 0.3f))->overrideModelName());
+    Triangle3d triA2(corA1, corA3, corA4);
+    this->addNewModel((new DrawTriangle3d(triA2))->setTriangleColor(vec4(0.0f, 0.4f, 1.0f, 0.3f))->overrideModelName());
 
     // Color points: red = positive, blue = negative, yellow = coplanar
     Triangle3d triA(pA, pB, pC);
@@ -655,18 +761,21 @@ void AlgGeom::SceneContent::buildPr2d()
     std::cout << "PRACTICA 2D - Sorteo #6 y #8" << std::endl;
     std::cout << "============================================" << std::endl;
 
-    // Define a 3D polygon (square in the XZ plane at y = 0)
+    // Define a 3D polygon (trapezoide asimetrico in the XZ plane at y = 0)
     std::vector<Vect3d> polygon;
-    Vect3d pp1(-3, 0, -3), pp2(3, 0, -3), pp3(3, 0, 3), pp4(-3, 0, 3);
+    Vect3d pp1(-1, 0, 5);  // Arriba
+    Vect3d pp2(3, 0, 1);   // Derecha
+    Vect3d pp3(0, 0, -5);  // Abajo
+    Vect3d pp4(-3, 0, 2);  // Izquierda
     polygon.push_back(pp1);
-    polygon.push_back(pp2);
+    polygon.push_back(pp4); // Orden anti-horario
     polygon.push_back(pp3);
-    polygon.push_back(pp4);
+    polygon.push_back(pp2);
 
-    // Draw polygon as two triangles
-    Triangle3d polyTri1(pp1, pp2, pp3);
+    // Draw polygon as two triangles (abanico desde pp1)
+    Triangle3d polyTri1(pp1, pp4, pp3);
     this->addNewModel((new DrawTriangle3d(polyTri1))->setTriangleColor(vec4(0.0f, 0.8f, 0.8f, 0.3f))->overrideModelName());
-    Triangle3d polyTri2(pp1, pp3, pp4);
+    Triangle3d polyTri2(pp1, pp3, pp2);
     this->addNewModel((new DrawTriangle3d(polyTri2))->setTriangleColor(vec4(0.0f, 0.8f, 0.8f, 0.3f))->overrideModelName());
 
     // #6: Line-Polygon intersection
@@ -705,8 +814,8 @@ void AlgGeom::SceneContent::buildPr2d()
         std::cout << "Sorteo #8: Segmento NO intersecta poligono" << std::endl;
     }
 
-    // Test with a segment that doesn't reach the polygon
-    Vect3d segC(1, 5, 1), segD(1, 2, 1); // above polygon, doesn't reach y=0
+    // Test with a segment that doesn't reach the polygon (movido para evitar solapamiento visual con testSeg)
+    Vect3d segC(-2, 5, -2), segD(-2, 2, -2); // above polygon, doesn't reach y=0
     Segment3d testSeg2(segC, segD);
     this->addNewModel((new DrawSegment3d(testSeg2))->setLineColor(vec3(0.5f, 0.5f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
 
