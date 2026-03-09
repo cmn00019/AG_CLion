@@ -1,11 +1,5 @@
 #pragma once
 
-/* 
- *  File:   DrawLine3d.h
- *
- *  Created on 3 de marzo de 2026
- */
-
 #include "Line3d.h"
 #include "Model3D.h"
 

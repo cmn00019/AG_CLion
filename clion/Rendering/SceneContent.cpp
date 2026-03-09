@@ -381,20 +381,17 @@ void AlgGeom::SceneContent::buildPr1b()
 
 void AlgGeom::SceneContent::buildPr2a()
 {
-    // ===========================================================
-    // PR2 A: Point Cloud 3D, Line/Ray/Segment, distances, AABB
-    // ===========================================================
     std::cout << "\n============================================" << std::endl;
     std::cout << "PRACTICA 2A" << std::endl;
     std::cout << "============================================" << std::endl;
 
-    // 1. Create point cloud of 50 random 3D points
+    // 1. Crear nube de puntos
     PointCloud3d cloud(50, 5.0f, 5.0f, 5.0f);
 
-    // Draw point cloud
+    // Dibujarla
     this->addNewModel((new DrawPointCloud3d(cloud))->setPointColor(vec3(0.0f, 0.5f, 1.0f))->overrideModelName()->setPointSize(5.0f));
 
-    // 2. Create Line, Ray, Segment from random cloud points
+    // 2. Creamos recta, rayo y segmento a partir de los puntos de la nube
     int n = (int)cloud.size();
     Vect3d pA = cloud.getPoint(0), pB = cloud.getPoint(1);
     Vect3d pC = cloud.getPoint(2), pD = cloud.getPoint(3);
@@ -404,16 +401,16 @@ void AlgGeom::SceneContent::buildPr2a()
     Ray3d R1(pC, pD);
     Segment3d S1(pE, pF);
 
-    // Draw Line3d (blue)
+    // Recta (azul)
     this->addNewModel((new DrawLine3d(L1))->setLineColor(vec3(0.0f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));
 
-    // Draw Ray3d (green)
+    // Rayo (verde)
     this->addNewModel((new DrawRay3d(R1))->setLineColor(vec3(0.0f, 1.0f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
 
-    // Draw Segment3d (red)
+    // Segmento (rojo)
     this->addNewModel((new DrawSegment3d(S1))->setLineColor(vec3(1.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
 
-    // 3. Distances
+    // 3. Distancias
     Vect3d V1 = cloud.getPoint(6);
     Vect3d V2 = cloud.getPoint(7);
 
@@ -421,11 +418,11 @@ void AlgGeom::SceneContent::buildPr2a()
     std::cout << "Distancia V1 a S1: " << S1.distance(V1) << std::endl;
     std::cout << "Distancia V2 a R1: " << R1.distance(V2) << std::endl;
 
-    // Draw V1 and V2 larger
+    // Dibujar V1 y V2 más grandes
     this->addNewModel((new DrawPoint3d(V1))->setPointColor(vec3(1.0f, 1.0f, 0.0f))->overrideModelName()->setPointSize(10.0f));
     this->addNewModel((new DrawPoint3d(V2))->setPointColor(vec3(1.0f, 0.5f, 0.0f))->overrideModelName()->setPointSize(10.0f));
 
-    // 4. Normal line to L1 through V2
+    // 4. Recta normal a L1 con V2
     Line3d normalL = L1.normalLine(V2);
     Vect3d nOrig = normalL.getOrigin();
     Vect3d nDest = normalL.getDestination();
@@ -434,20 +431,9 @@ void AlgGeom::SceneContent::buildPr2a()
 
     // 5. AABB
     AABB aabb = cloud.getAABB();
-    // Draw AABB edges
-    vec3 mn = aabb.min(), mx = aabb.max();
-    vec3 corners[8] = {
-        vec3(mn.x,mn.y,mn.z), vec3(mx.x,mn.y,mn.z), vec3(mx.x,mx.y,mn.z), vec3(mn.x,mx.y,mn.z),
-        vec3(mn.x,mn.y,mx.z), vec3(mx.x,mn.y,mx.z), vec3(mx.x,mx.y,mx.z), vec3(mn.x,mx.y,mx.z)
-    };
-    int edges[12][2] = {{0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}};
-    for (auto& e : edges)
-    {
-        Vect3d eOrig(corners[e[0]].x, corners[e[0]].y, corners[e[0]].z);
-        Vect3d eDest(corners[e[1]].x, corners[e[1]].y, corners[e[1]].z);
-        Segment3d edgeSeg(eOrig, eDest);
-        this->addNewModel((new DrawSegment3d(edgeSeg))->setLineColor(vec3(0.8f, 0.8f, 0.8f))->overrideModelName()->setLineWidth(1.0f));
-    }
+
+    //Dibujamos el AABB
+    this->addNewModel((new DrawAABB(aabb))->setLineColor(vec3(0.8f, 0.8f, 0.8f))->overrideModelName()->setLineWidth(1.0f));
 }
 
 void AlgGeom::SceneContent::buildPr2b()
@@ -460,7 +446,7 @@ void AlgGeom::SceneContent::buildPr2b()
     std::cout << "PRACTICA 2B" << std::endl;
     std::cout << "============================================" << std::endl;
 
-    // Crear nube de puntos 3D
+    // Crear nube de puntos
     PointCloud3d cloud(50, 5.0f, 5.0f, 5.0f);
     AABB aabb = cloud.getAABB();
 
@@ -468,29 +454,14 @@ void AlgGeom::SceneContent::buildPr2b()
     this->addNewModel((new DrawPointCloud3d(cloud))->setPointColor(vec3(0.0f, 0.5f, 1.0f))->overrideModelName()->setPointSize(5.0f));
 
     // Dibujar aristas de la AABB
-    vec3 cMn = aabb.min(), cMx = aabb.max();
-    vec3 corners[8] = {
-        vec3(cMn.x,cMn.y,cMn.z), vec3(cMx.x,cMn.y,cMn.z), vec3(cMx.x,cMx.y,cMn.z), vec3(cMn.x,cMx.y,cMn.z),
-        vec3(cMn.x,cMn.y,cMx.z), vec3(cMx.x,cMn.y,cMx.z), vec3(cMx.x,cMx.y,cMx.z), vec3(cMn.x,cMx.y,cMx.z)
-    };
-    int edges[12][2] = {{0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}};
-    for (auto& e : edges)
-    {
-        Vect3d eOrig(corners[e[0]].x, corners[e[0]].y, corners[e[0]].z);
-        Vect3d eDest(corners[e[1]].x, corners[e[1]].y, corners[e[1]].z);
-        Segment3d edgeSeg(eOrig, eDest);
-        this->addNewModel((new DrawSegment3d(edgeSeg))->setLineColor(vec3(0.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(4.0f));
-    }
+    this->addNewModel((new DrawAABB(aabb))->setLineColor(vec3(0.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(4.0f));
 
-    // ====================================================
-    // PASO 1: Plano P - tapa superior de la AABB
-    // ====================================================
-    // Construir el plano matematico original
+    // 1. Tapa superior del AABB (plano)
     vec3 mx = aabb.max(), mn = aabb.min();
     Vect3d topP1(mn.x, mx.y, mn.z), topP2(mx.x, mx.y, mn.z), topP3(mx.x, mx.y, mx.z);
     Plane planeP(topP1, topP2, topP3, true);
 
-    // Dibujar plano P como dos triangulos (tapa superior de la caja)
+    // Dibujar plano P como dos triangulos
     Vect3d topP4(mn.x, mx.y, mx.z);
     Triangle3d triTop1(topP1, topP2, topP3);
     this->addNewModel((new DrawTriangle3d(triTop1))->setTriangleColor(vec4(0.8f, 0.8f, 0.8f, 0.15f))->overrideModelName());
@@ -499,9 +470,7 @@ void AlgGeom::SceneContent::buildPr2b()
 
     std::cout << "Plano P (tapa superior AABB): normal = " << planeP.getNormal() << std::endl;
 
-    // ====================================================
-    // PASO 2: V3 - punto de la nube mas cercano a P
-    // ====================================================
+    // 2. V3 (punto más cercano a plano P = tapa superior AABB)
     double minDist = 1e18;
     int v3Idx = 0;
     for (int i = 0; i < (int)cloud.size(); i++)
@@ -516,9 +485,7 @@ void AlgGeom::SceneContent::buildPr2b()
     // Dibujar V3 en rojo
     this->addNewModel((new DrawPoint3d(V3))->setPointColor(vec3(1.0f, 0.0f, 0.0f))->overrideModelName()->setPointSize(10.0f));
 
-    // ====================================================
-    // PASO 3: Plano A con 3 puntos aleatorios, interseccion con P
-    // ====================================================
+    // 3. Plano A que intersecta con P
     Vect3d pA = cloud.getPoint(0), pB = cloud.getPoint(10), pC = cloud.getPoint(20);
     Plane planeA(pA, pB, pC, true);
 
@@ -577,13 +544,11 @@ void AlgGeom::SceneContent::buildPr2b()
         std::cout << "Interseccion P-A: planos paralelos (sin interseccion)" << std::endl;
     }
 
-    // ====================================================
-    // PASO 4: Recta L3 que intersecta con plano A
-    // ====================================================
+    // 4. Línea L3 que intersecta con A
     Vect3d l3a = cloud.getPoint(30), l3b = cloud.getPoint(40);
     Line3d L3(l3a, l3b);
 
-    // Dibujar L3 como segmento delimitado en magenta
+    // Dibujar L3 como segmento (magenta)
     Vect3d pL3_1 = L3.getPoint(-10.0);
     Vect3d pL3_2 = L3.getPoint(10.0);
     Segment3d segL3(pL3_1, pL3_2);
@@ -601,9 +566,7 @@ void AlgGeom::SceneContent::buildPr2b()
         std::cout << "L3-PlanoA: sin interseccion (L3 paralela a A)" << std::endl;
     }
 
-    // ====================================================
-    // PASO 5: Reflejar V3 en el plano A y pintarlo de otro color
-    // ====================================================
+    // 5. Reflejar V3 en A y pintarlo de otro color
     Vect3d reflected = planeA.reflectedPoint(V3);
     std::cout << "V3 reflejado en plano A: (" << reflected.getX() << ", " << reflected.getY() << ", " << reflected.getZ() << ")" << std::endl;
 
@@ -614,9 +577,7 @@ void AlgGeom::SceneContent::buildPr2b()
     Segment3d reflLine(V3, reflected);
     this->addNewModel((new DrawSegment3d(reflLine))->setLineColor(vec3(0.0f, 1.0f, 0.0f))->overrideModelName()->setLineWidth(1.0f));
 
-    // ====================================================
-    // PASO 6: Plano equidistante entre los puntos mas alejados
-    // ====================================================
+    // 6. Plano equidistante entre dos puntos más alejados de la nube
     int idxA, idxB;
     cloud.getMostDistanced(idxA, idxB);
     Vect3d mostA = cloud.getPoint(idxA), mostB = cloud.getPoint(idxB);
@@ -663,7 +624,7 @@ void AlgGeom::SceneContent::buildPr2b()
     double lenP2 = perp2.module();
     if (lenP2 > 0.0001) perp2 = perp2.scalarMul(1.0 / lenP2);
 
-    // Hacer el plano Equidistante mucho mas grande
+    // Hacer el plano equidistante mucho mas grande
     double eSizeX = (mx.x - mn.x) * 1.5;
     double eSizeZ = (mx.z - mn.z) * 1.5;
 
@@ -685,7 +646,7 @@ void AlgGeom::SceneContent::buildPr2b()
 void AlgGeom::SceneContent::buildPr2c()
 {
     // ===========================================================
-    // PR2 C: Classify points by plane side
+    // PR2 C: Clasificar puntos según el lado del plano al que pertenecen
     // ===========================================================
     std::cout << "\n============================================" << std::endl;
     std::cout << "PRACTICA 2C" << std::endl;
@@ -693,7 +654,7 @@ void AlgGeom::SceneContent::buildPr2c()
 
     PointCloud3d cloud(50, 5.0f, 5.0f, 5.0f);
 
-    // Plane A from 3 cloud points
+    // Plano A
     Vect3d pA = cloud.getPoint(0), pB = cloud.getPoint(10), pC = cloud.getPoint(20);
     Plane planeA(pA, pB, pC, true);
 
@@ -722,7 +683,7 @@ void AlgGeom::SceneContent::buildPr2c()
     double lenpA2 = pA2.module();
     if (lenpA2 > 0.0001) pA2 = pA2.scalarMul(1.0 / lenpA2);
 
-    // Hacer el plano A mucho mas grande para ver la interseccion (tamano * 1.5)
+    // Hacer el plano A mucho mas grande para ver la interseccion
     double sizeX = (mx.x - mn.x) * 1.5;
     double sizeZ = (mx.z - mn.z) * 1.5;
 
@@ -737,7 +698,7 @@ void AlgGeom::SceneContent::buildPr2c()
     Triangle3d triA2(corA1, corA3, corA4);
     this->addNewModel((new DrawTriangle3d(triA2))->setTriangleColor(vec4(0.0f, 0.4f, 1.0f, 0.3f))->overrideModelName());
 
-    // Color points: red = positive, blue = negative, yellow = coplanar
+    // Color de los puntos: rojo = positivo, azul = o, amarillo = coplanar
     Triangle3d triA(pA, pB, pC);
     for (int i = 0; i < (int)cloud.size(); i++)
     {
@@ -755,34 +716,33 @@ void AlgGeom::SceneContent::buildPr2c()
 void AlgGeom::SceneContent::buildPr2d()
 {
     // ===========================================================
-    // PR2 D: Sorteo #6 (line-polygon) and #8 (segment-polygon)
+    // PR2 D: Funcionalidades por sorteo (6 y 8)
     // ===========================================================
     std::cout << "\n============================================" << std::endl;
     std::cout << "PRACTICA 2D - Sorteo #6 y #8" << std::endl;
     std::cout << "============================================" << std::endl;
 
-    // Define a 3D polygon (trapezoide asimetrico in the XZ plane at y = 0)
+    // Definimos un polígono para las funcionalidades
     std::vector<Vect3d> polygon;
     Vect3d pp1(-1, 0, 5);  // Arriba
     Vect3d pp2(3, 0, 1);   // Derecha
     Vect3d pp3(0, 0, -5);  // Abajo
     Vect3d pp4(-3, 0, 2);  // Izquierda
     polygon.push_back(pp1);
-    polygon.push_back(pp4); // Orden anti-horario
+    polygon.push_back(pp4);
     polygon.push_back(pp3);
     polygon.push_back(pp2);
 
-    // Draw polygon as two triangles (abanico desde pp1)
     Triangle3d polyTri1(pp1, pp4, pp3);
     this->addNewModel((new DrawTriangle3d(polyTri1))->setTriangleColor(vec4(0.0f, 0.8f, 0.8f, 0.3f))->overrideModelName());
     Triangle3d polyTri2(pp1, pp3, pp2);
     this->addNewModel((new DrawTriangle3d(polyTri2))->setTriangleColor(vec4(0.0f, 0.8f, 0.8f, 0.3f))->overrideModelName());
 
-    // #6: Line-Polygon intersection
-    Vect3d lineA(0, -5, 0), lineB(0, 5, 0); // vertical line through center
+    // #6: Intersección recta-polígono
+    Vect3d lineA(0, -5, 0), lineB(0, 5, 0);
     Line3d testLine(lineA, lineB);
 
-    // Draw line
+    // Dibujar la recta (azul)
     this->addNewModel((new DrawLine3d(testLine))->setLineColor(vec3(0.0f, 0.0f, 1.0f))->overrideModelName()->setLineWidth(2.0f));
 
     Vect3d interPt;
@@ -796,11 +756,11 @@ void AlgGeom::SceneContent::buildPr2d()
         std::cout << "Sorteo #6: Recta NO intersecta poligono" << std::endl;
     }
 
-    // #8: Segment-Polygon intersection
-    Vect3d segA(1, -3, 1), segB(1, 3, 1); // vertical segment
+    // #8: Intersección segmento-polígono
+    Vect3d segA(1, -3, 1), segB(1, 3, 1);
     Segment3d testSeg(segA, segB);
 
-    // Draw segment
+    // Dibujar segmento (rojo)
     this->addNewModel((new DrawSegment3d(testSeg))->setLineColor(vec3(1.0f, 0.0f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
 
     Vect3d interPt2;
@@ -814,8 +774,7 @@ void AlgGeom::SceneContent::buildPr2d()
         std::cout << "Sorteo #8: Segmento NO intersecta poligono" << std::endl;
     }
 
-    // Test with a segment that doesn't reach the polygon (movido para evitar solapamiento visual con testSeg)
-    Vect3d segC(-2, 5, -2), segD(-2, 2, -2); // above polygon, doesn't reach y=0
+    Vect3d segC(-2, 5, -2), segD(-2, 2, -2);
     Segment3d testSeg2(segC, segD);
     this->addNewModel((new DrawSegment3d(testSeg2))->setLineColor(vec3(0.5f, 0.5f, 0.0f))->overrideModelName()->setLineWidth(2.0f));
 

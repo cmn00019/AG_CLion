@@ -69,7 +69,7 @@ Triangle3d & Triangle3d::operator=(const Triangle3d & triangle)
 
 std::ostream& operator<<(std::ostream& os, const Triangle3d& triangle)
 {
-	std::cout << "Triangle 3D -> " << triangle._a << ", " << triangle._b << ", " << triangle._c;
+	std::cout << "Triangulo 3D -> " << triangle._a << ", " << triangle._b << ", " << triangle._c;
 	return os;
 }
 

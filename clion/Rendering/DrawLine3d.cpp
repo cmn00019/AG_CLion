@@ -5,7 +5,7 @@
 
 AlgGeom::DrawLine3d::DrawLine3d(Line3d& line) : Model3D(), _line(line)
 {
-    // Simulate infinite line with large t values
+    // Simulamos la recta infinita con un "t" alto
     Vect3d pStart = line.getPoint(-1000.0);
     Vect3d pEnd   = line.getPoint(1000.0);
 

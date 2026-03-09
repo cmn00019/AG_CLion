@@ -71,17 +71,17 @@ public:
     /**
     *   @brief Intersects this circle with a line.
     */
-    RelationCircleLine intersect(Line& l, Vect2d& pinter1, Vect2d& pinter2);
+    RelationCircleLine intersect(Line& l, Vect2d& punto1, Vect2d& punto2);
 
     /**
     *   @brief Intersects this circle with a segment (0<=t<=1).
     */
-    RelationCircleLine intersect(SegmentLine& s, Vect2d& pinter1, Vect2d& pinter2);
+    RelationCircleLine intersect(SegmentLine& s, Vect2d& punto1, Vect2d& punto2);
 
     /**
     *   @brief Intersects this circle with a ray (t>=0).
     */
-    RelationCircleLine intersect(RayLine& r, Vect2d& pinter1, Vect2d& pinter2);
+    RelationCircleLine intersect(RayLine& r, Vect2d& punto1, Vect2d& punto2);
 
 	static std::string getStringEnum (RelationCircleLine nombre);
 	static std::string getStringEnum (RelationCircles nombre);

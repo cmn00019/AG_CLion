@@ -9,7 +9,6 @@ AlgGeom::DrawTriangle3d::DrawTriangle3d(Triangle3d& triangle) : Model3D(), _tria
     Vect3d b = _triangle.getB();
     Vect3d c = _triangle.getC();
 
-    // Calculate face normal
     Vect3d ab = b.sub(a);
     Vect3d ac = c.sub(a);
     Vect3d norm = ab.xProduct(ac);

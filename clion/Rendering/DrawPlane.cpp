@@ -3,19 +3,8 @@
 
 AlgGeom::DrawPlane::DrawPlane(Plane& plane) : Model3D(), _plane(plane) 
 {
-    // Obtener los tres puntos del plano (accedemos via copia del plano almacenado)
-    // Usamos la técnica de alargar los vectores de las aristas: ab, ac, bc, ba, ca, cb
-    // para obtener 6 puntos que forman un polígono 3D representando el plano.
-
-    // Acceder a los 3 puntos del plano: _a, _b, _c (protegidos en Plane, DrawPlane hereda indirectamente)
-    // Como Plane almacena _a, _b, _c como protegidos, y DrawPlane tiene _plane como miembro,
-    // necesitamos extraer los puntos. Usamos getNormal y los puntos originales.
-    // Los puntos se obtienen del constructor: Plane(a, b, c, true) guarda _a=a, _b=b, _c=c.
-
-    // Factor de escala para alargar los vectores
     const float scale = 5.0f;
 
-    // Obtenemos la normal del plano para usarla en los vértices
     Vect3d normal = _plane.getNormal();
     double mod = normal.module();
     vec3 n(0.0f);
@@ -23,16 +12,6 @@ AlgGeom::DrawPlane::DrawPlane(Plane& plane) : Model3D(), _plane(plane)
         n = glm::normalize(vec3((float)normal.getX(), (float)normal.getY(), (float)normal.getZ()));
     }
 
-    // Extraemos los tres puntos del plano a través de la interfaz pública.
-    // Plane almacena _a, _b, _c. Usamos getA/getB/getC para las componentes de la ecuación,
-    // pero necesitamos los puntos directamente. Como DrawPlane tiene _plane como miembro
-    // y Plane::_a, _b, _c son protected, creamos una subclase helper o usamos otro enfoque.
-    // Dado que Plane no expone directamente _a, _b, _c, construimos los puntos
-    // usando la normal y el término D para posicionar el plano correctamente.
-
-    // Enfoque alternativo: Construir 6 puntos directamente desde los vectores de aristas.
-    // Necesitamos acceder a _a, _b, _c. Como son protected, DrawPlane.h no hereda de Plane,
-    // así que usamos un truco: creamos un accessor local.
     struct PlaneAccess : public Plane {
         using Plane::_a;
         using Plane::_b;
@@ -61,8 +40,6 @@ AlgGeom::DrawPlane::DrawPlane(Plane& plane) : Model3D(), _plane(plane)
     Vect3d scb = cb.scalarMul(scale); Vect3d p5 = c.add(scb);
 
     // Orden de los 6 puntos para formar un polígono convexo correcto:
-    // El orden debe ser: P0, P2, P1, P3, P5, P4
-    // (alternando puntos de extensiones opuestas para mantener convexidad)
     Vect3d pts[6] = { p0, p2, p1, p3, p5, p4 };
 
     Component* component = new Component;
@@ -74,7 +51,6 @@ AlgGeom::DrawPlane::DrawPlane(Plane& plane) : Model3D(), _plane(plane)
         );
     }
 
-    // Triangular como fan desde el vértice 0: (0,1,2), (0,2,3), (0,3,4), (0,4,5)
     for (int i = 1; i < 5; i++) {
         component->_indices[VAO::IBO_TRIANGLE].insert(
             component->_indices[VAO::IBO_TRIANGLE].end(),

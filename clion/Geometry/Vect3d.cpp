@@ -97,7 +97,7 @@ bool Vect3d::operator!=(const Vect3d & vector)
 
 std::ostream& operator<<(std::ostream& os, const Vect3d& vec)
 {
-	os << "Coordinate X: " << std::to_string(vec.X) << ", coordinate Y: " << std::to_string(vec.Y) << ", coordinate Z: " << std::to_string(vec.Z);
+	os << "Coordenada X: " << std::to_string(vec.X) << ", coordenada Y: " << std::to_string(vec.Y) << ", coordenada Z: " << std::to_string(vec.Z);
 	return os;
 }
 
@@ -140,7 +140,7 @@ Vect3d Vect3d::xProduct(Vect3d & b)
 
 void Vect3d::getPlane(Vect3d& v, Vect3d& n, float& d)
 {
-    // eq3d_pvv , Obtener3PuntosPlano_abcd: plano equidistante
+    // plano equidistante
     // n = v - this (normal)
     n = v.sub(*this);
     // punto medio

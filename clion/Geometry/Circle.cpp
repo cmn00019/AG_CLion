@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "Circle.h"
 
-// Public methods
 
 Circle::~Circle()
 {
@@ -39,7 +38,7 @@ Circle& Circle::operator=(const Circle& circle)
     return *this;
 }
 
-// --- Relacion entre dos circulos ---
+// Relacion entre dos circulos
 
 RelationCircles Circle::relacionaCir(Circle& c)
 {
@@ -71,7 +70,7 @@ RelationCircles Circle::relacionaCir(Circle& c)
     return SECANT;
 }
 
-// --- Relacion entre circulo y recta ---
+// Relacion entre circulo y recta
 
 RelationCircleLine Circle::relacionaLine(Line& l)
 {
@@ -87,9 +86,9 @@ RelationCircleLine Circle::relacionaLine(Line& l)
     return NO_INTERSECT;
 }
 
-// --- Interseccion circulo-recta (sin restriccion en t) ---
+// Interseccion circulo-recta
 
-RelationCircleLine Circle::intersect(Line& l, Vect2d& pinter1, Vect2d& pinter2)
+RelationCircleLine Circle::intersect(Line& l, Vect2d& punto1, Vect2d& punto2)
 {
 
     // d = B - A (vector director)
@@ -116,8 +115,8 @@ RelationCircleLine Circle::intersect(Line& l, Vect2d& pinter1, Vect2d& pinter2)
         // Tangente: un punto
         double t = -dDotDelta / dSq;
         Vect2d p = Vect2d(l.getA()) + d.scalarMult(t);
-        pinter1 = p;
-        pinter2 = p;
+        punto1 = p;
+        punto2 = p;
         return TANGENTS;
     }
 
@@ -130,15 +129,15 @@ RelationCircleLine Circle::intersect(Line& l, Vect2d& pinter1, Vect2d& pinter2)
     double t1 = (-dDotDelta - sqrtDisc) / dSq;
     double t2 = (-dDotDelta + sqrtDisc) / dSq;
 
-    pinter1 = Vect2d(l.getA()) + d.scalarMult(t1);
-    pinter2 = Vect2d(l.getA()) + d.scalarMult(t2);
+    punto1 = Vect2d(l.getA()) + d.scalarMult(t1);
+    punto2 = Vect2d(l.getA()) + d.scalarMult(t2);
 
     return INTERSECT;
 }
 
-// --- Interseccion circulo-segmento (0 <= t <= 1) ---
+// Interseccion circulo-segmento
 
-RelationCircleLine Circle::intersect(SegmentLine& s, Vect2d& pinter1, Vect2d& pinter2)
+RelationCircleLine Circle::intersect(SegmentLine& s, Vect2d& punto1, Vect2d& punto2)
 {
     Vect2d d(s.getB().getX() - s.getA().getX(), s.getB().getY() - s.getA().getY());
     Vect2d delta(s.getA().getX() - _center.getX(), s.getA().getY() - _center.getY());
@@ -155,8 +154,8 @@ RelationCircleLine Circle::intersect(SegmentLine& s, Vect2d& pinter1, Vect2d& pi
         double t = -dDotDelta / dSq;
         if (t >= 0.0 && t <= 1.0)
         {
-            pinter1 = Vect2d(s.getA()) + d.scalarMult(t);
-            pinter2 = pinter1;
+            punto1 = Vect2d(s.getA()) + d.scalarMult(t);
+            punto2 = punto1;
             return TANGENTS;
         }
         return NO_INTERSECT;
@@ -173,7 +172,7 @@ RelationCircleLine Circle::intersect(SegmentLine& s, Vect2d& pinter1, Vect2d& pi
 
     if (t1 >= 0.0 && t1 <= 1.0)
     {
-        pinter1 = Vect2d(s.getA()) + d.scalarMult(t1);
+        punto1 = Vect2d(s.getA()) + d.scalarMult(t1);
         count++;
     }
 
@@ -181,23 +180,23 @@ RelationCircleLine Circle::intersect(SegmentLine& s, Vect2d& pinter1, Vect2d& pi
     {
         if (count == 0)
         {
-            pinter1 = Vect2d(s.getA()) + d.scalarMult(t2);
+            punto1 = Vect2d(s.getA()) + d.scalarMult(t2);
         }
         else
         {
-            pinter2 = Vect2d(s.getA()) + d.scalarMult(t2);
+            punto2 = Vect2d(s.getA()) + d.scalarMult(t2);
         }
         count++;
     }
 
     if (count == 0) return NO_INTERSECT;
-    if (count == 1) { pinter2 = pinter1; return TANGENTS; }
+    if (count == 1) { punto2 = punto1; return TANGENTS; }
     return INTERSECT;
 }
 
-// --- Interseccion circulo-rayo (t >= 0) ---
+// Interseccion circulo-rayo
 
-RelationCircleLine Circle::intersect(RayLine& r, Vect2d& pinter1, Vect2d& pinter2)
+RelationCircleLine Circle::intersect(RayLine& r, Vect2d& punto1, Vect2d& punto2)
 {
     Vect2d d(r.getB().getX() - r.getA().getX(), r.getB().getY() - r.getA().getY());
     Vect2d delta(r.getA().getX() - _center.getX(), r.getA().getY() - _center.getY());
@@ -213,8 +212,8 @@ RelationCircleLine Circle::intersect(RayLine& r, Vect2d& pinter1, Vect2d& pinter
         double t = -dDotDelta / dSq;
         if (t >= 0.0)
         {
-            pinter1 = Vect2d(r.getA()) + d.scalarMult(t);
-            pinter2 = pinter1;
+            punto1 = Vect2d(r.getA()) + d.scalarMult(t);
+            punto2 = punto1;
             return TANGENTS;
         }
         return NO_INTERSECT;
@@ -233,7 +232,7 @@ RelationCircleLine Circle::intersect(RayLine& r, Vect2d& pinter1, Vect2d& pinter
 
     if (t1 >= 0.0)
     {
-        pinter1 = Vect2d(r.getA()) + d.scalarMult(t1);
+        punto1 = Vect2d(r.getA()) + d.scalarMult(t1);
         count++;
     }
 
@@ -241,17 +240,17 @@ RelationCircleLine Circle::intersect(RayLine& r, Vect2d& pinter1, Vect2d& pinter
     {
         if (count == 0)
         {
-            pinter1 = Vect2d(r.getA()) + d.scalarMult(t2);
+            punto1 = Vect2d(r.getA()) + d.scalarMult(t2);
         }
         else
         {
-            pinter2 = Vect2d(r.getA()) + d.scalarMult(t2);
+            punto2 = Vect2d(r.getA()) + d.scalarMult(t2);
         }
         count++;
     }
 
     if (count == 0) return NO_INTERSECT;
-    if (count == 1) { pinter2 = pinter1; return TANGENTS; }
+    if (count == 1) { punto2 = punto1; return TANGENTS; }
     return INTERSECT;
 }
 
@@ -263,7 +262,7 @@ std::string Circle::getStringEnum(RelationCircleLine nombre)
     case 1: return "TANGENTS";
     case 2: return "NO_INTERSECT";
     }
-    return "UNKNOWN";
+    return "DESCONOCIDO";
 }
 
 std::string Circle::getStringEnum(RelationCircles nombre)
@@ -277,5 +276,5 @@ std::string Circle::getStringEnum(RelationCircles nombre)
     case 4: return "INTERIOR_TANG";
     case 5: return "EXTERNAL_TANG";
     }
-    return "UNKNOWN";
+    return "DESCONOCIDO";
 }

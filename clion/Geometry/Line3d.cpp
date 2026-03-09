@@ -23,15 +23,15 @@ Line3d::~Line3d()
 
 double Line3d::distance(Line3d & line)
 {
-    // eq3d_dll: d = |(q-q')·(v×v')| / ||v×v'||
-    Vect3d v = _dest.sub(_orig);          // direction of this line
-    Vect3d vp = line._dest.sub(line._orig); // direction of other line
+    // d = |(q-q')·(v×v')| / ||v×v'||
+    Vect3d v = _dest.sub(_orig);          // direccion de la linea
+    Vect3d vp = line._dest.sub(line._orig);
     Vect3d cross = v.xProduct(vp);        // v × v'
     double crossMod = cross.module();
 
     if (BasicGeometry::equal(crossMod, 0.0))
     {
-        // Lines are parallel: distance = point-to-line distance
+        // Lineas paralelas
         Vect3d diff = line._orig.sub(_orig); // q - q'
         Vect3d projected = v.scalarMul(diff.dot(v) / v.dot(v));
         Vect3d perp = diff.sub(projected);
@@ -45,7 +45,7 @@ double Line3d::distance(Line3d & line)
 
 Line3d Line3d::normalLine(Vect3d & point)
 {
-    // eq3d_nlv: λ = v·(p-t)/(v·v), Q = t + λv
+    //  λ = v·(p-t)/(v·v), Q = t + λv
     Vect3d v = _dest.sub(_orig);
     Vect3d pt = point.sub(_orig);
     double lambda = v.dot(pt) / v.dot(v);
@@ -55,7 +55,7 @@ Line3d Line3d::normalLine(Vect3d & point)
 }
 
 double Line3d::distance(Vect3d& p){
-    // eq3d_dlv: λ = v·(p-t)/(v·v), dist = ||p - t - λv||
+    // λ = v·(p-t)/(v·v), dist = ||p - t - λv||
     Vect3d v = _dest.sub(_orig);
     Vect3d pt = p.sub(_orig);
     double lambda = v.dot(pt) / v.dot(v);
@@ -77,7 +77,7 @@ Line3d & Line3d::operator=(const Line3d & line)
 
 std::ostream& operator<<(std::ostream& os, const Line3d& line)
 {
-	std::cout << "Line -> Origin: " << line._orig << ", Destination: " << line._dest;
+	std::cout << "Linea -> Origen: " << line._orig << ", Destino: " << line._dest;
 	return os;
 }
 

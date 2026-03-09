@@ -57,7 +57,7 @@ public:
 	*	@param v in pi = p + u * lambda + v * mu -> t from the points (R, S, T).
 	*	@param If arePoints is false, then params are p + u * lambda + v * mu, otherwise are points (R, S, T).
 	*/
-	Plane(Vect3d& p, Vect3d& u, Vect3d& v, bool arePoints);
+	Plane(Vect3d& p, Vect3d& u, Vect3d& v, bool hayPuntos);
 
 	/**
 	*	@brief Copy constructor.
@@ -117,7 +117,7 @@ public:
     /**
 	*	@brief Calculates the intersection point of three planes.
 	*/
-	bool intersect(Plane& pa, Plane& pb, Vect3d& pinter);
+	bool intersect(Plane& pa, Plane& pb, Vect3d& punto);
         
 	/**
 	*	@brief Calculates the intersection line of a plane with this plane.
@@ -132,12 +132,12 @@ public:
 	/**
 	*	@brief Intersection of a line with a 3D polygon (sorteo #6).
 	*/
-	static bool intersectLine3dPolygon(Line3d& line, std::vector<Vect3d>& polygon, Vect3d& pinter);
+	static bool intersectLine3dPolygon(Line3d& line, std::vector<Vect3d>& polygon, Vect3d& punto);
 
 	/**
 	*	@brief Intersection of a segment with a 3D polygon (sorteo #8).
 	*/
-	static bool intersectSegment3dPolygon(Segment3d& segment, std::vector<Vect3d>& polygon, Vect3d& pinter);
+	static bool intersectSegment3dPolygon(Segment3d& segment, std::vector<Vect3d>& polygon, Vect3d& punto);
 	
 	/**
 	*	@brief Assignment operator.
