@@ -218,9 +218,9 @@ bool Plane::intersectLine3dPolygon(Line3d& line, std::vector<Vect3d>& polygon, V
     double ax = std::abs(n.getX()), ay = std::abs(n.getY()), az = std::abs(n.getZ());
 
     // Determinamos que sobre que eje vamos a proyectar
-    int dropAxis = 2; // drop Z by default
-    if (ax >= ay && ax >= az) dropAxis = 0; // drop X
-    else if (ay >= ax && ay >= az) dropAxis = 1; // drop Y
+    int dropAxis = 2;
+    if (ax >= ay && ax >= az) dropAxis = 0;
+    else if (ay >= ax && ay >= az) dropAxis = 1;
 
     // Projectar los vertices del polígono
     auto project2D = [dropAxis](Vect3d& v) -> std::pair<double,double> {

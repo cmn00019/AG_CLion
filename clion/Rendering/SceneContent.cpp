@@ -392,7 +392,6 @@ void AlgGeom::SceneContent::buildPr2a()
     this->addNewModel((new DrawPointCloud3d(cloud))->setPointColor(vec3(0.0f, 0.5f, 1.0f))->overrideModelName()->setPointSize(5.0f));
 
     // 2. Creamos recta, rayo y segmento a partir de los puntos de la nube
-    int n = (int)cloud.size();
     Vect3d pA = cloud.getPoint(0), pB = cloud.getPoint(1);
     Vect3d pC = cloud.getPoint(2), pD = cloud.getPoint(3);
     Vect3d pE = cloud.getPoint(4), pF = cloud.getPoint(5);
@@ -719,7 +718,7 @@ void AlgGeom::SceneContent::buildPr2d()
     // PR2 D: Funcionalidades por sorteo (6 y 8)
     // ===========================================================
     std::cout << "\n============================================" << std::endl;
-    std::cout << "PRACTICA 2D - Sorteo #6 y #8" << std::endl;
+    std::cout << "PRACTICA 2D - Sorteo 6 y 8" << std::endl;
     std::cout << "============================================" << std::endl;
 
     // Definimos un polígono para las funcionalidades
@@ -748,12 +747,12 @@ void AlgGeom::SceneContent::buildPr2d()
     Vect3d interPt;
     if (Plane::intersectLine3dPolygon(testLine, polygon, interPt))
     {
-        std::cout << "Sorteo #6: Recta INTERSECTA poligono en (" << interPt.getX() << ", " << interPt.getY() << ", " << interPt.getZ() << ")" << std::endl;
+        std::cout << "Sorteo 6: Recta INTERSECTA poligono en (" << interPt.getX() << ", " << interPt.getY() << ", " << interPt.getZ() << ")" << std::endl;
         this->addNewModel((new DrawPoint3d(interPt))->setPointColor(vec3(1.0f, 1.0f, 0.0f))->overrideModelName()->setPointSize(12.0f));
     }
     else
     {
-        std::cout << "Sorteo #6: Recta NO intersecta poligono" << std::endl;
+        std::cout << "Sorteo 6: Recta NO intersecta poligono" << std::endl;
     }
 
     // #8: Intersección segmento-polígono
@@ -766,12 +765,12 @@ void AlgGeom::SceneContent::buildPr2d()
     Vect3d interPt2;
     if (Plane::intersectSegment3dPolygon(testSeg, polygon, interPt2))
     {
-        std::cout << "Sorteo #8: Segmento INTERSECTA poligono en (" << interPt2.getX() << ", " << interPt2.getY() << ", " << interPt2.getZ() << ")" << std::endl;
+        std::cout << "Sorteo 8: Segmento INTERSECTA poligono en (" << interPt2.getX() << ", " << interPt2.getY() << ", " << interPt2.getZ() << ")" << std::endl;
         this->addNewModel((new DrawPoint3d(interPt2))->setPointColor(vec3(0.0f, 1.0f, 0.0f))->overrideModelName()->setPointSize(12.0f));
     }
     else
     {
-        std::cout << "Sorteo #8: Segmento NO intersecta poligono" << std::endl;
+        std::cout << "Sorteo 8: Segmento NO intersecta poligono" << std::endl;
     }
 
     Vect3d segC(-2, 5, -2), segD(-2, 2, -2);
