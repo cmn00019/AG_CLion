@@ -23,6 +23,9 @@
 #include "Triangle3d.h"
 #include "Vect2d.h"
 #include "Vect3d.h"
+#include "Ray3d.h"
+
+class Octree;
 
 #define BINARY_EXTENSION ".bin"
 
@@ -33,6 +36,8 @@ private:
     std::vector<Vect3d>     _normals;
     std::vector<Vect2d>     _textCoordinates;
     std::vector<unsigned>   _indices;  
+    std::vector<Triangle3d> _faces; 
+    Octree*                 _octree;
 
 protected:
     Assimp::Importer        _assimpImporter;
@@ -50,11 +55,18 @@ public:
 
     PointCloud3d getCloud();
     Triangle3d getFace(unsigned index);
-    std::vector<Triangle3d> getFaces();
+    std::vector<Triangle3d*> getFacesPtrs();
     std::vector<Vect3d>* getVertices() { return &_vertices; }
     std::vector<Vect3d>* getNormals() { return &_normals; }
     std::vector<Vect2d>* getTextureCoordinates() { return &_textCoordinates; }
     std::vector<unsigned>* getIndices() { return &_indices; }
     size_t numTriangles();
+
+    void buildFaces();
+    std::vector<Triangle3d*> rayTravesal(Ray3d &r);
+    bool pointIntoMeshOct(Vect3d &p);
+    
+    Octree* getOctree() { return _octree; }
+    void setOctree(Octree* oct) { _octree = oct; }
 };
 

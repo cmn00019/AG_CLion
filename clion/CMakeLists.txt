@@ -72,6 +72,10 @@ set(SOURCE_FILES
         ${GEOMETRY}/Line3d.h
         ${GEOMETRY}/Plane.cpp
         ${GEOMETRY}/Plane.h
+        ${GEOMETRY}/NodeOctree.cpp
+        ${GEOMETRY}/NodeOctree.h
+        ${GEOMETRY}/Octree.cpp
+        ${GEOMETRY}/Octree.h
         ${GEOMETRY}/PointCloud3d.cpp
         ${GEOMETRY}/PointCloud3d.h
         ${GEOMETRY}/Ray3d.cpp
@@ -132,6 +136,8 @@ set(SOURCE_FILES
         ${RENDERING}/DrawTriangle.h
         ${RENDERING}/DrawTriangle3d.cpp
         ${RENDERING}/DrawTriangle3d.h
+        ${RENDERING}/DrawOctree.cpp
+        ${RENDERING}/DrawOctree.h
         ${RENDERING}/DrawVoxelization.cpp
         ${RENDERING}/DrawVoxelization.h
         ${RENDERING}/FBO.cpp

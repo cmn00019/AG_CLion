@@ -28,6 +28,7 @@ namespace AlgGeom
 		void buildPr2b();
 		void buildPr2c();
 		void buildPr2d();
+		void buildPr3a();
 		Model3D* getModel(Model3D::Component* component);
 	};
 }

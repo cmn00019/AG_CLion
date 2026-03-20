@@ -26,6 +26,9 @@
 
 #include "Vect3d.h"
 
+class Ray3d;
+class AABB;
+
 /**
 *	@brief This class represents a triangle defined by 3 points.
 *	@author Lidia Mª Ortega Alvarado.
@@ -89,6 +92,16 @@ public:
 	*	@brief Returns the are of the triangle.
 	*/
 	double area();
+
+	/**
+	*	@brief Ray-Triangle intersection test.
+	*/
+	bool ray_tri(Ray3d& ray, Vect3d& p);
+
+	/**
+	*	@brief AABB-Triangle intersection test.
+	*/
+	bool tri_AABB(AABB& box);
 
 	/**
 	*	@brief Returns the position of the point respect to the triangle plane.
