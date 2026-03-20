@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "TriangleModel.h"
+#include "Octree.h"
 
-
-TriangleModel::TriangleModel(const std::string& pathfile)
+TriangleModel::TriangleModel(const std::string& pathfile) : _octree(nullptr)
 {
     std::string binaryFile = pathfile.substr(0, pathfile.find_last_of('.')) + BINARY_EXTENSION;
 
@@ -52,16 +52,57 @@ Triangle3d TriangleModel::getFace(unsigned index)
     return Triangle3d(a, b, c);
 }
 
-std::vector<Triangle3d> TriangleModel::getFaces(){
+std::vector<Triangle3d*> TriangleModel::getFacesPtrs(){
     
-    std::vector<Triangle3d> result;
-    
-    for (int index = 0; index < this->numTriangles(); index++)
+    std::vector<Triangle3d*> result;
+    if (_faces.empty() && numTriangles() > 0) {
+        buildFaces();
+    }
+    for (size_t index = 0; index < _faces.size(); index++)
     {
-        result.push_back(getFace(index));
+        result.push_back(&_faces[index]);
     }
 
     return result;
+}
+
+void TriangleModel::buildFaces() {
+    _faces.clear();
+    for (size_t i = 0; i < numTriangles(); i++)
+    {
+        _faces.push_back(getFace(i));
+    }
+}
+
+std::vector<Triangle3d*> TriangleModel::rayTravesal(Ray3d &r)
+{
+    std::vector<Triangle3d*> result;
+    std::vector<Triangle3d*> allFaces = getFacesPtrs();
+    
+    for (auto* tri : allFaces) {
+        Vect3d p;
+        if (tri->ray_tri(r, p)) {
+            result.push_back(tri);
+        }
+    }
+    return result;
+}
+
+bool TriangleModel::pointIntoMeshOct(Vect3d &p)
+{
+    if (!_octree) return false;
+    
+    NodeOctree* leaf = _octree->findLeaf(p);
+    if (!leaf) return false;
+    
+    if (leaf->color == BLACK) return true;
+    if (leaf->color == WHITE) return false;
+    
+    // If GREY, we are at the border. Shoot a ray to decide exactly.
+    Vect3d dest(p.getX() + 1.0, p.getY(), p.getZ());
+    Ray3d ray(p, dest);
+    auto hits = rayTravesal(ray);
+    return (hits.size() % 2) != 0; 
 }
 
 size_t TriangleModel::numTriangles()

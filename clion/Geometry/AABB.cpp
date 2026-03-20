@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "AABB.h"
+#include "Triangle3d.h"
 
 // Public methods
 
@@ -26,6 +27,11 @@ AABB& AABB::operator=(const AABB& aabb)
 AABB AABB::dot(const mat4& matrix)
 {
 	return AABB(matrix * vec4(_min, 1.0f), matrix * vec4(_max, 1.0f));
+}
+
+bool AABB::AABB_tri(Triangle3d& t)
+{
+	return t.tri_AABB(*this);
 }
 
 void AABB::update(const AABB& aabb)

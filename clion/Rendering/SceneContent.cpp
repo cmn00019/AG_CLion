@@ -11,6 +11,10 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
+#include <chrono>
+#include "Octree.h"
+#include "DrawOctree.h"
+#include "TriangleModel.h"
 
 
 // ----------------------------- BUILD YOUR SCENARIO HERE -----------------------------------
@@ -787,6 +791,67 @@ void AlgGeom::SceneContent::buildPr2d()
 
 // ------------------------------------------------------------------------------------------
 
+void AlgGeom::SceneContent::buildPr3a()
+{
+    std::cout << "\n============================================" << std::endl;
+    std::cout << "PRACTICA 3A - Octree" << std::endl;
+    std::cout << "============================================" << std::endl;
+
+    std::string modelPath = "Assets/Models/coffee_table.obj";
+    TriangleModel* tm = new TriangleModel(modelPath);
+    this->addNewModel((new DrawMesh())->loadModelOBJ(modelPath)->overrideModelName());
+    
+    // 1. Cargar algún modelo 3D y crear el octree correspondiente. Visualizar el resultado.
+    Octree* octree = new Octree(tm, modelPath);
+    
+    // 2. Clasificar el octree con los tres colores usando el método classify_color descrito
+    //    anteriormente y medir el tiempo que se tarda en hacer esta clasificación.
+    auto start = std::chrono::high_resolution_clock::now();
+    octree->classify_color();
+    auto end = std::chrono::high_resolution_clock::now();
+    auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    std::cout << "Tiempo en clasificar Octree: " << dur << " ms" << std::endl;
+    
+    DrawOctree* drawOctree = new DrawOctree(octree);
+    this->addNewModel(drawOctree->overrideModelName());
+
+    // 3. Crear una nube de al menos 100 puntos dibujando de forma diferente los que
+    //    están dentro de los que están fuera usando el nuevo método.
+    Vect3d boxMin = Vect3d(octree->raiz->box.min().x, octree->raiz->box.min().y, octree->raiz->box.min().z);
+    Vect3d boxMax = Vect3d(octree->raiz->box.max().x, octree->raiz->box.max().y, octree->raiz->box.max().z);
+    
+    std::vector<Vect3d> randomPoints;
+    for (int i = 0; i < 100; i++) {
+        double px = RandomUtilities::getUniformRandom(boxMin.getX(), boxMax.getX());
+        double py = RandomUtilities::getUniformRandom(boxMin.getY(), boxMax.getY());
+        double pz = RandomUtilities::getUniformRandom(boxMin.getZ(), boxMax.getZ());
+        randomPoints.push_back(Vect3d(px, py, pz));
+    }
+    
+    auto startOct = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 100; i++) {
+        bool inside = tm->pointIntoMeshOct(randomPoints[i]);
+        vec3 color = inside ? vec3(0.0f, 1.0f, 0.0f) : vec3(1.0f, 0.0f, 0.0f); // Green inside, Red outside
+        this->addNewModel((new DrawPoint3d(randomPoints[i]))->setPointColor(color)->overrideModelName()->setPointSize(6.0f));
+    }
+    auto endOct = std::chrono::high_resolution_clock::now();
+    auto durOct = std::chrono::duration_cast<std::chrono::nanoseconds>(endOct - startOct).count();
+    std::cout << "Tiempo clasificar 100 puntos CON Octree: " << durOct << " ns" << std::endl;
+
+    // 4. Hacer la misma operación sin usar la clasificación de nodos del Octree...
+    auto startNaive = std::chrono::high_resolution_clock::now();
+    int insideCountNaive = 0;
+    for (int i = 0; i < 100; i++) {
+        Vect3d dir(1.0, 0.0, 0.0);
+        Vect3d dest(randomPoints[i].getX() + dir.getX(), randomPoints[i].getY() + dir.getY(), randomPoints[i].getZ() + dir.getZ());
+        Ray3d ray(randomPoints[i], dest);
+        auto hits = tm->rayTravesal(ray);
+        if ((hits.size() % 2) != 0) insideCountNaive++;
+    }
+    auto endNaive = std::chrono::high_resolution_clock::now();
+    auto durNaive = std::chrono::duration_cast<std::chrono::nanoseconds>(endNaive - startNaive).count();
+    std::cout << "Tiempo clasificar 100 puntos SIN Octree: " << durNaive << " ns" << std::endl;
+}
 
 AlgGeom::SceneContent::SceneContent()
 {

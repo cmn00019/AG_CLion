@@ -1,5 +1,7 @@
 #pragma once
 
+class Triangle3d;
+
 class AABB
 {
 protected:
@@ -20,6 +22,8 @@ public:
 
 	void update(const AABB& aabb);
 	void update(const vec3& point);
+
+	bool AABB_tri(Triangle3d& t);
 
 	friend std::ostream& operator<<(std::ostream& os, const AABB& aabb);
 };

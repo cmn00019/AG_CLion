@@ -350,6 +350,14 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			_modelCompSelected = nullptr;
 		}
 
+		ImGui::SameLine();
+		if (ImGui::Button("PR3 A"))
+		{
+			sceneContent->clearScene();
+			sceneContent->buildPr3a();
+			_modelCompSelected = nullptr;
+		}
+
 		GuiUtilities::leaveSpace(2);
 		ImGui::BeginChild("Components", ImVec2(200, 0), true);
 
