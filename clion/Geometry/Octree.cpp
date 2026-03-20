@@ -86,9 +86,11 @@ void Octree::classifyNode(NodeOctree* node)
             vec3 centerBox = node->box.center();
             Vect3d center(centerBox.x, centerBox.y, centerBox.z);
             
-            // Random rays or orthogonal ones 
-            Vect3d dir1(1.0, 0.0, 0.0);
-            Vect3d dir2(0.0, 1.0, 0.0);
+            // Random rays instead of orthogonal to avoid grazing faces/edges 
+            vec3 v1 = RandomUtilities::getUniformRandomInUnitSphere();
+            vec3 v2 = RandomUtilities::getUniformRandomInUnitSphere();
+            Vect3d dir1(v1.x, v1.y, v1.z);
+            Vect3d dir2(v2.x, v2.y, v2.z);
             
             Vect3d dest1(center.getX()+dir1.getX(), center.getY()+dir1.getY(), center.getZ()+dir1.getZ());
             Vect3d dest2(center.getX()+dir2.getX(), center.getY()+dir2.getY(), center.getZ()+dir2.getZ());
@@ -96,11 +98,8 @@ void Octree::classifyNode(NodeOctree* node)
             Ray3d ray1(center, dest1);
             Ray3d ray2(center, dest2);
             
-            auto hits1 = model->rayTravesal(ray1);
-            auto hits2 = model->rayTravesal(ray2);
-            
-            bool odd1 = (hits1.size() % 2) != 0;
-            bool odd2 = (hits2.size() % 2) != 0;
+            bool odd1 = model->hasOddIntersections(ray1);
+            bool odd2 = model->hasOddIntersections(ray2);
             
             if (odd1 && odd2) {
                 node->color = BLACK;
@@ -108,11 +107,11 @@ void Octree::classifyNode(NodeOctree* node)
                 node->color = WHITE;
             } else {
                 // Murphy's law -> 3rd ray to break tie
-                Vect3d dir3(0.0, 0.0, 1.0);
+                vec3 v3 = RandomUtilities::getUniformRandomInUnitSphere();
+                Vect3d dir3(v3.x, v3.y, v3.z);
                 Vect3d dest3(center.getX()+dir3.getX(), center.getY()+dir3.getY(), center.getZ()+dir3.getZ());
                 Ray3d ray3(center, dest3);
-                auto hits3 = model->rayTravesal(ray3);
-                bool odd3 = (hits3.size() % 2) != 0;
+                bool odd3 = model->hasOddIntersections(ray3);
                 
                 if (odd3) node->color = BLACK;
                 else node->color = WHITE;
@@ -129,32 +128,15 @@ NodeOctree* Octree::findLeafRec(NodeOctree* node, const Vect3d& p)
 {
     if (node->esHoja()) return node;
     
-    vec3 minB = node->box.min();
-    vec3 maxB = node->box.max();
     vec3 med = node->box.center();
     
+    int childIndex = 0;
     Vect3d p_copy = p;
-    double coorX = p_copy.getX(), coorY = p_copy.getY(), coorZ = p_copy.getZ();
-    double medX = med.x, medY = med.y, medZ = med.z;
+    if (p_copy.getX() >= med.x) childIndex |= 1;
+    if (p_copy.getY() >= med.y) childIndex |= 2;
+    if (p_copy.getZ() >= med.z) childIndex |= 4;
     
-    if(coorY >= medY){  
-         if(coorX >= medX){ 
-              if(coorZ >= medZ){ return findLeafRec(node->hijos[7], p); }  
-              else { return findLeafRec(node->hijos[5], p); }              
-          } else { 
-              if(coorZ >= medZ){ return findLeafRec(node->hijos[6], p); }  
-              else { return findLeafRec(node->hijos[4], p); }              
-         }
-   } else { 
-          if(coorX >= medX){ 
-             if(coorZ >= medZ){ return findLeafRec(node->hijos[3], p); }  
-             else { return findLeafRec(node->hijos[1], p); }              
-          } else { 
-             if(coorZ >= medZ){ return findLeafRec(node->hijos[2], p); } 
-             else { return findLeafRec(node->hijos[0], p); }              
-          }
-   }
-   return nullptr;
+    return findLeafRec(node->hijos[childIndex], p);
 }
 
 NodeOctree* Octree::findLeaf(const Vect3d& p)

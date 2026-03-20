@@ -96,6 +96,7 @@ void AlgGeom::GUI::processSelectedFile(FileDialog fileDialog, const std::string&
 		Model3D* model = (new DrawMesh())->loadModelOBJ(filename);
 		model->moveGeometryToOrigin();
 		sceneContent->addNewModel(model);
+		sceneContent->_currentModelPath = filename;
 	}
 }
 
@@ -350,12 +351,67 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			_modelCompSelected = nullptr;
 		}
 
+		static bool showOctreeWhite = true;
+		static bool showOctreeGrey = true;
+		static bool showOctreeBlack = true;
+		static bool showMesh = true;
+
 		ImGui::SameLine();
 		if (ImGui::Button("PR3 A"))
 		{
-			sceneContent->clearScene();
-			sceneContent->buildPr3a();
-			_modelCompSelected = nullptr;
+			if (sceneContent->_currentModelPath.empty())
+			{
+				std::cout << "Por favor, cargue un modelo antes de ejecutar la practica 3." << std::endl;
+			}
+			else
+			{
+				std::string currentPath = sceneContent->_currentModelPath;
+				sceneContent->clearScene();
+				sceneContent->_currentModelPath = currentPath;
+				sceneContent->buildPr3a();
+				_modelCompSelected = nullptr;
+				
+				showOctreeWhite = true;
+				showOctreeGrey = true;
+				showOctreeBlack = true;
+				showMesh = true;
+			}
+		}
+
+		GuiUtilities::leaveSpace(1);
+		ImGui::Text("Filtros Pr3A");
+		ImGui::Separator();
+		bool filtersChanged = false;
+		if (ImGui::Checkbox("Ver Modelo", &showMesh)) filtersChanged = true;
+		ImGui::SameLine();
+		if (ImGui::Checkbox("AABB Blancos", &showOctreeWhite)) filtersChanged = true;
+		ImGui::SameLine();
+		if (ImGui::Checkbox("AABB Grises", &showOctreeGrey)) filtersChanged = true;
+		ImGui::SameLine();
+		if (ImGui::Checkbox("AABB Negros", &showOctreeBlack)) filtersChanged = true;
+
+		if (filtersChanged)
+		{
+			for (size_t modelIdx = 0; modelIdx < sceneContent->_model.size(); ++modelIdx)
+			{
+				auto& model = sceneContent->_model[modelIdx];
+				if (model->getName().find("DrawMesh") != std::string::npos)
+				{
+					for (auto& comp : model->_components)
+					{
+						comp->_enabled = showMesh;
+					}
+				}
+				else if (model->getName().find("DrawOctree") != std::string::npos)
+				{
+					for (auto& comp : model->_components)
+					{
+						if (comp->_material._lineColor == vec3(1.0f, 1.0f, 1.0f)) comp->_enabled = showOctreeWhite;
+						else if (comp->_material._lineColor == vec3(0.5f, 0.5f, 0.5f)) comp->_enabled = showOctreeGrey;
+						else if (comp->_material._lineColor == vec3(0.0f, 0.0f, 0.0f)) comp->_enabled = showOctreeBlack;
+					}
+				}
+			}
 		}
 
 		GuiUtilities::leaveSpace(2);

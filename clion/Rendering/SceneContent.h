@@ -14,6 +14,7 @@ namespace AlgGeom
 		std::vector<std::unique_ptr<Camera>>	_camera;
 		std::vector<std::unique_ptr<Model3D>>	_model;
 		AABB									_sceneAABB;
+		std::string								_currentModelPath;
 
 		SceneContent();
 		virtual ~SceneContent();

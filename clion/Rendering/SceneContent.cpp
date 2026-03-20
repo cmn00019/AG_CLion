@@ -23,6 +23,7 @@ void AlgGeom::SceneContent::clearScene()
 {
     _model.clear();
     _sceneAABB = AABB();
+    _currentModelPath = "";
 }
 
 void AlgGeom::SceneContent::buildScenario()
@@ -797,7 +798,7 @@ void AlgGeom::SceneContent::buildPr3a()
     std::cout << "PRACTICA 3A - Octree" << std::endl;
     std::cout << "============================================" << std::endl;
 
-    std::string modelPath = "Assets/Models/coffee_table.obj";
+    std::string modelPath = this->_currentModelPath;
     TriangleModel* tm = new TriangleModel(modelPath);
     this->addNewModel((new DrawMesh())->loadModelOBJ(modelPath)->overrideModelName());
     
@@ -809,8 +810,8 @@ void AlgGeom::SceneContent::buildPr3a()
     auto start = std::chrono::high_resolution_clock::now();
     octree->classify_color();
     auto end = std::chrono::high_resolution_clock::now();
-    auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    std::cout << "Tiempo en clasificar Octree: " << dur << " ms" << std::endl;
+    std::chrono::duration<double> durSeconds = end - start;
+    std::cout << "Tiempo en clasificar Octree: " << durSeconds.count() << " s" << std::endl;
     
     DrawOctree* drawOctree = new DrawOctree(octree);
     this->addNewModel(drawOctree->overrideModelName());
@@ -829,14 +830,17 @@ void AlgGeom::SceneContent::buildPr3a()
     }
     
     auto startOct = std::chrono::high_resolution_clock::now();
+    int insideCountOct = 0;
     for (int i = 0; i < 100; i++) {
         bool inside = tm->pointIntoMeshOct(randomPoints[i]);
+        if (inside) insideCountOct++;
         vec3 color = inside ? vec3(0.0f, 1.0f, 0.0f) : vec3(1.0f, 0.0f, 0.0f); // Green inside, Red outside
         this->addNewModel((new DrawPoint3d(randomPoints[i]))->setPointColor(color)->overrideModelName()->setPointSize(6.0f));
     }
     auto endOct = std::chrono::high_resolution_clock::now();
-    auto durOct = std::chrono::duration_cast<std::chrono::nanoseconds>(endOct - startOct).count();
-    std::cout << "Tiempo clasificar 100 puntos CON Octree: " << durOct << " ns" << std::endl;
+    std::chrono::duration<double> durOctSeconds = endOct - startOct;
+    std::cout << "RESULTADO (CON Octree): " << insideCountOct << " dentro, " << (100 - insideCountOct) << " fuera." << std::endl;
+    std::cout << "Tiempo clasificar 100 puntos CON Octree: " << durOctSeconds.count() << " s" << std::endl;
 
     // 4. Hacer la misma operación sin usar la clasificación de nodos del Octree...
     auto startNaive = std::chrono::high_resolution_clock::now();
@@ -849,8 +853,9 @@ void AlgGeom::SceneContent::buildPr3a()
         if ((hits.size() % 2) != 0) insideCountNaive++;
     }
     auto endNaive = std::chrono::high_resolution_clock::now();
-    auto durNaive = std::chrono::duration_cast<std::chrono::nanoseconds>(endNaive - startNaive).count();
-    std::cout << "Tiempo clasificar 100 puntos SIN Octree: " << durNaive << " ns" << std::endl;
+    std::chrono::duration<double> durNaiveSeconds = endNaive - startNaive;
+    std::cout << "RESULTADO (SIN Octree): " << insideCountNaive << " dentro, " << (100 - insideCountNaive) << " fuera." << std::endl;
+    std::cout << "Tiempo clasificar 100 puntos SIN Octree: " << durNaiveSeconds.count() << " s" << std::endl;
 }
 
 AlgGeom::SceneContent::SceneContent()

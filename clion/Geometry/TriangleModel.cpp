@@ -4,7 +4,7 @@
 
 TriangleModel::TriangleModel(const std::string& pathfile) : _octree(nullptr)
 {
-    std::string binaryFile = pathfile.substr(0, pathfile.find_last_of('.')) + BINARY_EXTENSION;
+    std::string binaryFile = pathfile.substr(0, pathfile.find_last_of('.')) + TM_BINARY_EXTENSION;
 
     if (std::filesystem::exists(binaryFile))
     {
@@ -101,8 +101,23 @@ bool TriangleModel::pointIntoMeshOct(Vect3d &p)
     // If GREY, we are at the border. Shoot a ray to decide exactly.
     Vect3d dest(p.getX() + 1.0, p.getY(), p.getZ());
     Ray3d ray(p, dest);
-    auto hits = rayTravesal(ray);
-    return (hits.size() % 2) != 0; 
+    return hasOddIntersections(ray); 
+}
+
+bool TriangleModel::hasOddIntersections(Ray3d &r)
+{
+    if (_faces.empty() && numTriangles() > 0) {
+        buildFaces();
+    }
+    
+    int hits = 0;
+    for (size_t i = 0; i < _faces.size(); i++) {
+        Vect3d p;
+        if (_faces[i].ray_tri(r, p)) {
+            hits++;
+        }
+    }
+    return (hits % 2) != 0;
 }
 
 size_t TriangleModel::numTriangles()

@@ -27,7 +27,7 @@
 
 class Octree;
 
-#define BINARY_EXTENSION ".bin"
+#define TM_BINARY_EXTENSION "_tm.bin"
 
 class TriangleModel 
 {    
@@ -64,6 +64,7 @@ public:
 
     void buildFaces();
     std::vector<Triangle3d*> rayTravesal(Ray3d &r);
+    bool hasOddIntersections(Ray3d &r);
     bool pointIntoMeshOct(Vect3d &p);
     
     Octree* getOctree() { return _octree; }
