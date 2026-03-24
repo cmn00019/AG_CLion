@@ -40,7 +40,7 @@ double Triangle3d::area()
 
 bool Triangle3d::ray_tri(Ray3d& ray, Vect3d& p)
 {
-    // Moller-Trumbor algorithm
+    // Algoritmo de Moller-Trumbore
     Vect3d edge1(_b.sub(_a));
     Vect3d edge2(_c.sub(_a));
     

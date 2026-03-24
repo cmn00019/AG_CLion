@@ -16,6 +16,7 @@ public:
     unsigned int rayos_indecision;
     unsigned int nivel_maximo;
     unsigned int maximo_triangulos_nodo;
+    unsigned int nodos_no_optimizados;
 
     Octree(TriangleModel* bm_model, const std::string& objFile);
     ~Octree();

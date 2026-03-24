@@ -6,7 +6,7 @@
 #include <algorithm>
 
 Octree::Octree(TriangleModel* bm_model, const std::string& objFile)
-    : model(bm_model), optimized(true), rayos_indecision(0), nivel_maximo(0), maximo_triangulos_nodo(0)
+    : model(bm_model), optimized(true), rayos_indecision(0), nivel_maximo(0), maximo_triangulos_nodo(0), nodos_no_optimizados(0)
 {
     model->setOctree(this);
     
@@ -48,7 +48,7 @@ void Octree::buildNode(NodeOctree* node)
         nivel_maximo = node->nivel;
     }
     
-    // Actualizar máximo de triángulos SÓLO para las hojas
+    // Actualizar máximo de triángulos
     if (node->nivel >= MAX_LEVELS || node->pContenidos.size() <= MAX_TRI_NODE) {
         if (node->pContenidos.size() > maximo_triangulos_nodo) {
             maximo_triangulos_nodo = node->pContenidos.size();
@@ -58,12 +58,13 @@ void Octree::buildNode(NodeOctree* node)
     if (node->nivel >= MAX_LEVELS) {
         if (node->pContenidos.size() > MAX_TRI_NODE) {
             optimized = false; // No pudimos dividir más (alcanzado MAX_LEVELS)
+            nodos_no_optimizados++;
         }
         return;
     }
     
     if (node->pContenidos.size() <= MAX_TRI_NODE) {
-        return; // Condición cumplida, no se necesita subdivisión
+        return;
     }
     
     node->creaHijos();
@@ -95,11 +96,11 @@ void Octree::classifyNode(NodeOctree* node)
             node->color = GREY; // Frontera del modelo
         } else {
             // No tiene triángulos -> BLANCO o NEGRO
-            // Lanzar 2 rayos desde el centro
+            // 2 rayos desde el centro
             vec3 centerBox = node->box.center();
             Vect3d center(centerBox.x, centerBox.y, centerBox.z);
             
-            // Rayos aleatorios en lugar de ortogonales para evitar rasar caras/aristas 
+            // Rayos
             vec3 v1 = RandomUtilities::getUniformRandomInUnitSphere();
             vec3 v2 = RandomUtilities::getUniformRandomInUnitSphere();
             Vect3d dir1(v1.x, v1.y, v1.z);
@@ -121,7 +122,7 @@ void Octree::classifyNode(NodeOctree* node)
             } else if (!odd1 && !odd2) {
                 node->color = WHITE;
             } else {
-                // Ley de Murphy -> 3er rayo para desempatar
+                // 3er rayo para desempatar
                 rayos_indecision++;
                 vec3 v3 = RandomUtilities::getUniformRandomInUnitSphere();
                 Vect3d dir3(v3.x, v3.y, v3.z);
@@ -166,6 +167,8 @@ void Octree::printStatistics() const
     std::cout << "Rayos de indecision lanzados (3er rayo): " << rayos_indecision << std::endl;
     std::cout << "Nivel maximo alcanzado: " << nivel_maximo << std::endl;
     std::cout << "Maximo numero de triangulos en un nodo: " << maximo_triangulos_nodo << std::endl;
+    std::cout << "Octree optimizado (<= " << MAX_TRI_NODE << " tri/nodo): " << (optimized ? "Si" : "No") 
+              << " (" << nodos_no_optimizados << " veces superado limite)" << std::endl;
     std::cout << "-------------------------------" << std::endl;
 }
 

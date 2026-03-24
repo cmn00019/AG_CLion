@@ -794,6 +794,7 @@ void AlgGeom::SceneContent::buildPr2d()
 
 void AlgGeom::SceneContent::buildPr3a()
 {
+    auto startTotal = std::chrono::high_resolution_clock::now();
     std::cout << "\n============================================" << std::endl;
     std::cout << "PRACTICA 3A - Octree" << std::endl;
     std::cout << "============================================" << std::endl;
@@ -802,11 +803,10 @@ void AlgGeom::SceneContent::buildPr3a()
     TriangleModel* tm = new TriangleModel(modelPath);
     this->addNewModel((new DrawMesh())->loadModelOBJ(modelPath)->overrideModelName());
     
-    // 1. Cargar algún modelo 3D y crear el octree correspondiente. Visualizar el resultado.
+    // 1. Cargar modelo 3D y crear el octree correspondiente.
     Octree* octree = new Octree(tm, modelPath);
     
-    // 2. Clasificar el octree con los tres colores usando el método classify_color descrito
-    //    anteriormente y medir el tiempo que se tarda en hacer esta clasificación.
+    // 2. Clasificar el octree
     auto start = std::chrono::high_resolution_clock::now();
     octree->classify_color();
     auto end = std::chrono::high_resolution_clock::now();
@@ -814,12 +814,14 @@ void AlgGeom::SceneContent::buildPr3a()
     std::cout << "Tiempo en clasificar Octree: " << durSeconds.count() << " s" << std::endl;
     octree->printStatistics();
 
-    
+    auto startDraw = std::chrono::high_resolution_clock::now();
     DrawOctree* drawOctree = new DrawOctree(octree);
     this->addNewModel(drawOctree->overrideModelName());
+    auto endDraw = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> durDrawSeconds = endDraw - startDraw;
+    std::cout << "Tiempo de pintado (DrawOctree): " << durDrawSeconds.count() << " s" << std::endl;
 
-    // 3. Crear una nube de al menos 100 puntos dibujando de forma diferente los que
-    //    están dentro de los que están fuera usando el nuevo método.
+    // 3. Crear una nube de al menos 100 puntos
     Vect3d boxMin = Vect3d(octree->raiz->box.min().x, octree->raiz->box.min().y, octree->raiz->box.min().z);
     Vect3d boxMax = Vect3d(octree->raiz->box.max().x, octree->raiz->box.max().y, octree->raiz->box.max().z);
     
@@ -844,7 +846,7 @@ void AlgGeom::SceneContent::buildPr3a()
     std::cout << "RESULTADO (CON Octree): " << insideCountOct << " dentro, " << (100 - insideCountOct) << " fuera." << std::endl;
     std::cout << "Tiempo clasificar 100 puntos CON Octree: " << durOctSeconds.count() << " s" << std::endl;
 
-    // 4. Hacer la misma operación sin usar la clasificación de nodos del Octree...
+    // 4.Clasificación sin Octree
     auto startNaive = std::chrono::high_resolution_clock::now();
     int insideCountNaive = 0;
     for (int i = 0; i < 100; i++) {
@@ -858,6 +860,10 @@ void AlgGeom::SceneContent::buildPr3a()
     std::chrono::duration<double> durNaiveSeconds = endNaive - startNaive;
     std::cout << "RESULTADO (SIN Octree): " << insideCountNaive << " dentro, " << (100 - insideCountNaive) << " fuera." << std::endl;
     std::cout << "Tiempo clasificar 100 puntos SIN Octree: " << durNaiveSeconds.count() << " s" << std::endl;
+
+    auto endTotal = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> durTotalSeconds = endTotal - startTotal;
+    std::cout << "Tiempo total de ejecucion pr3_a: " << durTotalSeconds.count() << " s" << std::endl;
 }
 
 AlgGeom::SceneContent::SceneContent()

@@ -30,7 +30,7 @@ class Ray3d;
 class AABB;
 
 /**
-*	@brief This class represents a triangle defined by 3 points.
+*	@brief Esta clase representa un triangulo definido por 3 puntos.
 *	@author Lidia Mª Ortega Alvarado.
 */
 class Triangle3d
@@ -49,7 +49,7 @@ public:
 		PARALELL, COLLINEAR, INTERSECTS, NO_INTERSECTS
 	};
 
-	// Contains all those attributes necessary for resolving the intersection between a triangle and an AABB.
+	// Contiene todos los atributos necesarios para resolver la interseccion entre un triangulo y un AABB.
 	struct TriangleAABBIntersData
 	{
 		Vect3d	_v0, _v1, _v2;
@@ -64,7 +64,7 @@ protected:
 
 public:
 	/**
-	*	@brief Default constructor.
+	*	@brief Constructor por defecto.
 	*/
 	Triangle3d();
 
@@ -74,7 +74,7 @@ public:
 	Triangle3d(double ax, double ay, double az, double bx, double by, double bz, double cx, double cy, double cz);
 
 	/**
-	*	@brief Copy constructor.
+	*	@brief Constructor de copia.
 	*/
 	Triangle3d(const Triangle3d& triangle);
 
@@ -89,77 +89,77 @@ public:
 	virtual ~Triangle3d();
 
 	/**
-	*	@brief Returns the are of the triangle.
+	*	@brief Devuelve el area del triangulo.
 	*/
 	double area();
 
 	/**
-	*	@brief Ray-Triangle intersection test.
+	*	@brief Prueba de interseccion Rayo-Triangulo.
 	*/
 	bool ray_tri(Ray3d& ray, Vect3d& p);
 
 	/**
-	*	@brief AABB-Triangle intersection test.
+	*	@brief Prueba de interseccion AABB-Triangulo.
 	*/
 	bool tri_AABB(AABB& box);
 
 	/**
-	*	@brief Returns the position of the point respect to the triangle plane.
+	*	@brief Devuelve la posicion del punto respecto al plano del triangulo.
 	*/
 	PointPosition classify(Vect3d& point);
 
 	/**
-	*	@brief Returns a new triangle with the same values than this one.
+	*	@brief Devuelve un nuevo triangulo con los mismos valores que este.
 	*/
 	Triangle3d copy() { return Triangle3d(_a, _b, _c); }
 
 	/**
-	*	@brief Returns the first point.
+	*	@brief Devuelve el primer punto.
 	*/
 	Vect3d getA() { return _a; }
 
 	/**
-	*	@brief Returns the second point.
+	*	@brief Devuelve el segundo punto.
 	*/
 	Vect3d getB() { return _b; }
 	
 	/**
-	*	@brief Returns the third point.
+	*	@brief Devuelve el tercer punto.
 	*/
 	Vect3d getC() { return _c; }
 
 	/**
-	*	@brief Returns the normal of the triangle.
+	*	@brief Devuelve la normal del triangulo.
 	*/
 	Vect3d normal();
 
 	/**
-	*	@brief Assignment operator.
+	*	@brief Operador de asignacion.
 	*/
 	virtual Triangle3d& operator=(const Triangle3d& triangle);
 
 	/**
-	*	@brief Cout overloading.
+	*	@brief Sobrecarga de Cout.
 	*/
 	friend std::ostream& operator<<(std::ostream& os, const Triangle3d& triangle);
 
 	/**
-	*	@brief Modifies the first point.
+	*	@brief Modifica el primer punto.
 	*/
 	void setA(Vect3d& pa) { _a = pa; }
 
 	/**
-	*	@brief Modifies the second point.
+	*	@brief Modifica el segundo punto.
 	*/
 	void setB(Vect3d& pb) { _b = pb; }
 
 	/**
-	*	@brief Modifies the third point.
+	*	@brief Modifica el tercer punto.
 	*/
 	void setC(Vect3d& pc) { _c = pc; }
 
 	/**
-	*	@brief Modifies all the points.
+	*	@brief Modifica todos los puntos.
 	*/
 	void set(Vect3d& va, Vect3d& vb, Vect3d& vc);	
 };
