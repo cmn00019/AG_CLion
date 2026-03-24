@@ -1,6 +1,7 @@
 #pragma once
 
 class Triangle3d;
+class Ray3d;
 
 class AABB
 {
@@ -24,6 +25,7 @@ public:
 	void update(const vec3& point);
 
 	bool AABB_tri(Triangle3d& t);
+	bool rayIntersects(Ray3d& ray);
 
 	friend std::ostream& operator<<(std::ostream& os, const AABB& aabb);
 };

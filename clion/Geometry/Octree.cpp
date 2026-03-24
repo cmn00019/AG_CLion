@@ -3,13 +3,14 @@
 #include "RandomUtilities.h"
 #include "Ray3d.h"
 #include <iostream>
+#include <algorithm>
 
 Octree::Octree(TriangleModel* bm_model, const std::string& objFile)
-    : model(bm_model), optimized(true)
+    : model(bm_model), optimized(true), rayos_indecision(0), nivel_maximo(0), maximo_triangulos_nodo(0)
 {
     model->setOctree(this);
     
-    // Calculate full AABB
+    // Calcular la caja AABB completa
     AABB fullBox;
     auto vertices = model->getVertices();
     if (vertices && !vertices->empty()) {
@@ -25,13 +26,13 @@ Octree::Octree(TriangleModel* bm_model, const std::string& objFile)
     
     raiz = new NodeOctree(0, fullBox.min(), fullBox.max(), this);
     
-    // Add all triangles to root
+    // Añadir todos los triángulos a la raíz
     auto faces = model->getFacesPtrs();
     for (auto tri : faces) {
         raiz->pContenidos.push_back(tri);
     }
     
-    // Build the tree recursively
+    // Construir el árbol recursivamente
     buildNode(raiz);
 }
 
@@ -42,20 +43,32 @@ Octree::~Octree()
 
 void Octree::buildNode(NodeOctree* node)
 {
+    // Actualizar estadísticas
+    if (node->nivel > nivel_maximo) {
+        nivel_maximo = node->nivel;
+    }
+    
+    // Actualizar máximo de triángulos SÓLO para las hojas
+    if (node->nivel >= MAX_LEVELS || node->pContenidos.size() <= MAX_TRI_NODE) {
+        if (node->pContenidos.size() > maximo_triangulos_nodo) {
+            maximo_triangulos_nodo = node->pContenidos.size();
+        }
+    }
+
     if (node->nivel >= MAX_LEVELS) {
         if (node->pContenidos.size() > MAX_TRI_NODE) {
-            optimized = false; // We couldn't divide further
+            optimized = false; // No pudimos dividir más (alcanzado MAX_LEVELS)
         }
         return;
     }
     
     if (node->pContenidos.size() <= MAX_TRI_NODE) {
-        return; // Condition met, no subdivision needed
+        return; // Condición cumplida, no se necesita subdivisión
     }
     
     node->creaHijos();
     
-    // Distribute children
+    // Distribuir a los hijos
     for (int i = 0; i < 8; i++) {
         NodeOctree* child = node->hijos[i];
         for (auto tri : node->pContenidos) {
@@ -66,7 +79,7 @@ void Octree::buildNode(NodeOctree* node)
         buildNode(child);
     }
     
-    // Clear parent contents since they are pushed to leaves
+    // Limpiar el contenido del padre ya que se ha pasado a las hojas
     node->pContenidos.clear();
 }
 
@@ -79,14 +92,14 @@ void Octree::classifyNode(NodeOctree* node)
 {
     if (node->esHoja()) {
         if (!node->pContenidos.empty()) {
-            node->color = GREY; // Border of the model
+            node->color = GREY; // Frontera del modelo
         } else {
-            // It has no triangles -> WHITE or BLACK
-            // Shoot 2 rays from center
+            // No tiene triángulos -> BLANCO o NEGRO
+            // Lanzar 2 rayos desde el centro
             vec3 centerBox = node->box.center();
             Vect3d center(centerBox.x, centerBox.y, centerBox.z);
             
-            // Random rays instead of orthogonal to avoid grazing faces/edges 
+            // Rayos aleatorios en lugar de ortogonales para evitar rasar caras/aristas 
             vec3 v1 = RandomUtilities::getUniformRandomInUnitSphere();
             vec3 v2 = RandomUtilities::getUniformRandomInUnitSphere();
             Vect3d dir1(v1.x, v1.y, v1.z);
@@ -98,20 +111,23 @@ void Octree::classifyNode(NodeOctree* node)
             Ray3d ray1(center, dest1);
             Ray3d ray2(center, dest2);
             
-            bool odd1 = model->hasOddIntersections(ray1);
-            bool odd2 = model->hasOddIntersections(ray2);
+            std::vector<Triangle3d*> testedTriangles1, testedTriangles2, testedTriangles3;
+            
+            bool odd1 = (countRayIntersections(raiz, ray1, testedTriangles1) % 2) != 0;
+            bool odd2 = (countRayIntersections(raiz, ray2, testedTriangles2) % 2) != 0;
             
             if (odd1 && odd2) {
                 node->color = BLACK;
             } else if (!odd1 && !odd2) {
                 node->color = WHITE;
             } else {
-                // Murphy's law -> 3rd ray to break tie
+                // Ley de Murphy -> 3er rayo para desempatar
+                rayos_indecision++;
                 vec3 v3 = RandomUtilities::getUniformRandomInUnitSphere();
                 Vect3d dir3(v3.x, v3.y, v3.z);
                 Vect3d dest3(center.getX()+dir3.getX(), center.getY()+dir3.getY(), center.getZ()+dir3.getZ());
                 Ray3d ray3(center, dest3);
-                bool odd3 = model->hasOddIntersections(ray3);
+                bool odd3 = (countRayIntersections(raiz, ray3, testedTriangles3) % 2) != 0;
                 
                 if (odd3) node->color = BLACK;
                 else node->color = WHITE;
@@ -142,4 +158,36 @@ NodeOctree* Octree::findLeafRec(NodeOctree* node, const Vect3d& p)
 NodeOctree* Octree::findLeaf(const Vect3d& p)
 {
     return findLeafRec(raiz, p);
+}
+
+void Octree::printStatistics() const
+{
+    std::cout << "--- Estadisticas del Octree ---" << std::endl;
+    std::cout << "Rayos de indecision lanzados (3er rayo): " << rayos_indecision << std::endl;
+    std::cout << "Nivel maximo alcanzado: " << nivel_maximo << std::endl;
+    std::cout << "Maximo numero de triangulos en un nodo: " << maximo_triangulos_nodo << std::endl;
+    std::cout << "-------------------------------" << std::endl;
+}
+
+int Octree::countRayIntersections(NodeOctree* node, Ray3d& ray, std::vector<Triangle3d*>& testedTriangles)
+{
+    if (!node->box.rayIntersects(ray)) return 0;
+    
+    int hits = 0;
+    if (node->esHoja()) {
+        for (auto tri : node->pContenidos) {
+            if (std::find(testedTriangles.begin(), testedTriangles.end(), tri) == testedTriangles.end()) {
+                testedTriangles.push_back(tri);
+                Vect3d p;
+                if (tri->ray_tri(ray, p)) {
+                    hits++;
+                }
+            }
+        }
+    } else {
+        for (int i = 0; i < 8; i++) {
+            hits += countRayIntersections(node->hijos[i], ray, testedTriangles);
+        }
+    }
+    return hits;
 }

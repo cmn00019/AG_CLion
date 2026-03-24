@@ -812,6 +812,8 @@ void AlgGeom::SceneContent::buildPr3a()
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> durSeconds = end - start;
     std::cout << "Tiempo en clasificar Octree: " << durSeconds.count() << " s" << std::endl;
+    octree->printStatistics();
+
     
     DrawOctree* drawOctree = new DrawOctree(octree);
     this->addNewModel(drawOctree->overrideModelName());
@@ -834,7 +836,7 @@ void AlgGeom::SceneContent::buildPr3a()
     for (int i = 0; i < 100; i++) {
         bool inside = tm->pointIntoMeshOct(randomPoints[i]);
         if (inside) insideCountOct++;
-        vec3 color = inside ? vec3(0.0f, 1.0f, 0.0f) : vec3(1.0f, 0.0f, 0.0f); // Green inside, Red outside
+        vec3 color = inside ? vec3(0.0f, 1.0f, 0.0f) : vec3(1.0f, 0.0f, 0.0f); // Verde si está dentro, Rojo si está fuera
         this->addNewModel((new DrawPoint3d(randomPoints[i]))->setPointColor(color)->overrideModelName()->setPointSize(6.0f));
     }
     auto endOct = std::chrono::high_resolution_clock::now();
