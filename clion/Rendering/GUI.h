@@ -13,10 +13,10 @@ namespace AlgGeom
 
 	protected:
 		enum MenuButtons { RENDERING, MODELS, CAMERA, LIGHT, SCREENSHOT, NUM_GUI_MENU_BUTTONS };
-		enum FileDialog { OPEN_MESH, NONE };
+		enum FileDialog { OPEN_MESH, OPEN_MESH_B, NONE };
 		inline static std::string DEFAULT_DIRECTORY = ".";
-		inline static std::vector<std::string> FILE_DIALOG_TEXT { "Choose Model" };
-		inline static std::vector<std::string> FILE_DIALOG_EXTENSION { ".obj, .gltf, .fbx" };
+		inline static std::vector<std::string> FILE_DIALOG_TEXT { "Choose Model", "Choose Model B" };
+		inline static std::vector<std::string> FILE_DIALOG_EXTENSION { ".obj, .gltf, .fbx", ".obj, .gltf, .fbx" };
 
 		ApplicationState*									_appState;
 		CameraGuiAdapter*									_cameraGuiAdapter;

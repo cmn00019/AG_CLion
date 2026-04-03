@@ -4,6 +4,7 @@
 #include "Ray3d.h"
 #include <iostream>
 #include <algorithm>
+#include <unordered_set>
 
 Octree::Octree(TriangleModel* bm_model, const std::string& objFile)
     : model(bm_model), optimized(true), rayos_indecision(0), nivel_maximo(0), maximo_triangulos_nodo(0), nodos_no_optimizados(0)
@@ -194,3 +195,148 @@ int Octree::countRayIntersections(NodeOctree* node, Ray3d& ray, std::vector<Tria
     }
     return hits;
 }
+
+void Octree::colisiona(NodeOctree* nodoA, NodeOctree* nodoB, std::vector<std::pair<NodeOctree*, NodeOctree*>>& result_nodos)
+{
+    if (!nodoA->box.box_box(nodoB->box)) return;
+
+    if (nodoA->esHoja() && nodoB->esHoja()) {
+        result_nodos.push_back({nodoA, nodoB});
+    } else if (nodoA->esHoja()) {
+        for (int j = 0; j < 8; j++) {
+            if (nodoB->hijos[j] != nullptr) {
+                colisiona(nodoA, nodoB->hijos[j], result_nodos);
+            }
+        }
+    } else if (nodoB->esHoja()) {
+        for (int i = 0; i < 8; i++) {
+            if (nodoA->hijos[i] != nullptr) {
+                colisiona(nodoA->hijos[i], nodoB, result_nodos);
+            }
+        }
+    } else {
+        for (int i = 0; i < 8; i++) {
+            if (nodoA->hijos[i] != nullptr) {
+                for (int j = 0; j < 8; j++) {
+                    if (nodoB->hijos[j] != nullptr) {
+                        colisiona(nodoA->hijos[i], nodoB->hijos[j], result_nodos);
+                    }
+                }
+            }
+        }
+    }
+}
+
+std::vector<Triangle3d *> Octree::collide(Octree &obj, std::vector<NodeOctree*>& out_intersected_nodes)
+{
+    std::vector<std::pair<NodeOctree*, NodeOctree*>> result_nodos;
+    if (this->raiz != nullptr && obj.raiz != nullptr) {
+        colisiona(this->raiz, obj.raiz, result_nodos);
+    }
+
+    std::vector<Triangle3d *> result_triangles;
+    for (auto& par : result_nodos) {
+        bool pushedNodeA = false;
+        bool pushedNodeB = false;
+
+        for (auto tri_j : par.first->pContenidos) {
+            for (auto tri_k : par.second->pContenidos) {
+                if (tri_j->tri_tri(*tri_k)) {
+                    if (std::find(result_triangles.begin(), result_triangles.end(), tri_j) == result_triangles.end())
+                        result_triangles.push_back(tri_j);
+                    if (std::find(result_triangles.begin(), result_triangles.end(), tri_k) == result_triangles.end())
+                        result_triangles.push_back(tri_k);
+
+                    if (!pushedNodeA) {
+                        out_intersected_nodes.push_back(par.first);
+                        pushedNodeA = true;
+                    }
+                    if (!pushedNodeB) {
+                        out_intersected_nodes.push_back(par.second);
+                        pushedNodeB = true;
+                    }
+                }
+            }
+        }
+    }
+    return result_triangles;
+}
+
+void Octree::colisionaMat(NodeOctree* nodoA, NodeOctree* nodoB, const mat4& matA, const mat4& matB, std::vector<std::pair<NodeOctree*, NodeOctree*>>& result_nodos)
+{
+    // Cajas transformadas por la matriz (soporta rotación y escala)
+    AABB boxA = nodoA->box.dot(matA);
+    AABB boxB = nodoB->box.dot(matB);
+    if (!boxA.box_box(boxB)) return;
+
+    if (nodoA->esHoja() && nodoB->esHoja()) {
+        result_nodos.push_back({nodoA, nodoB});
+    } else if (nodoA->esHoja()) {
+        for (int j = 0; j < 8; j++) {
+            if (nodoB->hijos[j] != nullptr)
+                colisionaMat(nodoA, nodoB->hijos[j], matA, matB, result_nodos);
+        }
+    } else if (nodoB->esHoja()) {
+        for (int i = 0; i < 8; i++) {
+            if (nodoA->hijos[i] != nullptr)
+                colisionaMat(nodoA->hijos[i], nodoB, matA, matB, result_nodos);
+        }
+    } else {
+        for (int i = 0; i < 8; i++) {
+            if (nodoA->hijos[i] != nullptr) {
+                for (int j = 0; j < 8; j++) {
+                    if (nodoB->hijos[j] != nullptr)
+                        colisionaMat(nodoA->hijos[i], nodoB->hijos[j], matA, matB, result_nodos);
+                }
+            }
+        }
+    }
+}
+
+std::vector<Triangle3d *> Octree::collideWithMatrices(Octree &obj, const mat4& matA, const mat4& matB,
+    std::vector<NodeOctree*>& out_nodesA, std::vector<NodeOctree*>& out_nodesB)
+{
+    std::vector<std::pair<NodeOctree*, NodeOctree*>> result_nodos;
+    if (this->raiz != nullptr && obj.raiz != nullptr) {
+        colisionaMat(this->raiz, obj.raiz, matA, matB, result_nodos);
+    }
+
+    // Deduplicate overlapping leaf nodes using sets (O(1) lookup instead of O(n))
+    std::unordered_set<NodeOctree*> setNodesA, setNodesB;
+    for (auto& par : result_nodos) {
+        if (setNodesA.insert(par.first).second)
+            out_nodesA.push_back(par.first);
+        if (setNodesB.insert(par.second).second)
+            out_nodesB.push_back(par.second);
+    }
+
+    // Triangle-triangle tests with matrices applied
+    std::vector<Triangle3d *> result_triangles;
+    std::unordered_set<Triangle3d*> addedTris;
+    for (auto& par : result_nodos) {
+        for (auto tri_j : par.first->pContenidos) {
+            vec4 jAv = matA * vec4(tri_j->getA().getX(), tri_j->getA().getY(), tri_j->getA().getZ(), 1.0f);
+            vec4 jBv = matA * vec4(tri_j->getB().getX(), tri_j->getB().getY(), tri_j->getB().getZ(), 1.0f);
+            vec4 jCv = matA * vec4(tri_j->getC().getX(), tri_j->getC().getY(), tri_j->getC().getZ(), 1.0f);
+            Vect3d vJA(jAv.x, jAv.y, jAv.z), vJB(jBv.x, jBv.y, jBv.z), vJC(jCv.x, jCv.y, jCv.z);
+            Triangle3d matJ(vJA, vJB, vJC);
+
+            for (auto tri_k : par.second->pContenidos) {
+                vec4 kAv = matB * vec4(tri_k->getA().getX(), tri_k->getA().getY(), tri_k->getA().getZ(), 1.0f);
+                vec4 kBv = matB * vec4(tri_k->getB().getX(), tri_k->getB().getY(), tri_k->getB().getZ(), 1.0f);
+                vec4 kCv = matB * vec4(tri_k->getC().getX(), tri_k->getC().getY(), tri_k->getC().getZ(), 1.0f);
+                Vect3d vKA(kAv.x, kAv.y, kAv.z), vKB(kBv.x, kBv.y, kBv.z), vKC(kCv.x, kCv.y, kCv.z);
+                Triangle3d matK(vKA, vKB, vKC);
+
+                if (matJ.tri_tri(matK)) {
+                    if (addedTris.insert(tri_j).second)
+                        result_triangles.push_back(tri_j);
+                    if (addedTris.insert(tri_k).second)
+                        result_triangles.push_back(tri_k);
+                }
+            }
+        }
+    }
+    return result_triangles;
+}
+

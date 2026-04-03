@@ -27,12 +27,32 @@ AABB& AABB::operator=(const AABB& aabb)
 
 AABB AABB::dot(const mat4& matrix)
 {
-	return AABB(matrix * vec4(_min, 1.0f), matrix * vec4(_max, 1.0f));
+	vec3 corners[8] = {
+		vec3(_min.x, _min.y, _min.z), vec3(_max.x, _min.y, _min.z),
+		vec3(_max.x, _max.y, _min.z), vec3(_min.x, _max.y, _min.z),
+		vec3(_min.x, _min.y, _max.z), vec3(_max.x, _min.y, _max.z),
+		vec3(_max.x, _max.y, _max.z), vec3(_min.x, _max.y, _max.z)
+	};
+	
+	AABB newAABB;
+	for (int i = 0; i < 8; i++) {
+		newAABB.update(vec3(matrix * vec4(corners[i], 1.0f)));
+	}
+	return newAABB;
 }
 
 bool AABB::AABB_tri(Triangle3d& t)
 {
 	return t.tri_AABB(*this);
+}
+
+bool AABB::box_box(AABB& b)
+{
+	if (_max.x < b.min().x || _min.x > b.max().x) return false;
+	if (_max.y < b.min().y || _min.y > b.max().y) return false;
+	if (_max.z < b.min().z || _min.z > b.max().z) return false;
+
+	return true;
 }
 
 void AABB::update(const AABB& aabb)

@@ -15,6 +15,8 @@
 #include "Octree.h"
 #include "DrawOctree.h"
 #include "TriangleModel.h"
+#include "NodeOctree.h"
+#include <unordered_set>
 
 
 // ----------------------------- BUILD YOUR SCENARIO HERE -----------------------------------
@@ -24,6 +26,21 @@ void AlgGeom::SceneContent::clearScene()
     _model.clear();
     _sceneAABB = AABB();
     _currentModelPath = "";
+    _currentModelPathB = "";
+    
+    if (_tmA) { delete _tmA; _tmA = nullptr; }
+    if (_tmB) { delete _tmB; _tmB = nullptr; }
+    if (_octA) { delete _octA; _octA = nullptr; }
+    if (_octB) { delete _octB; _octB = nullptr; }
+    _drawA_ref = nullptr;
+    _drawB_ref = nullptr;
+    _drawOctA_ref = nullptr;
+    _drawOctB_ref = nullptr;
+    _pr4_reds = nullptr;
+    _pr4_redsB = nullptr;
+    _pr4_boxesA = nullptr;
+    _pr4_boxesB = nullptr;
+    _isPr4Active = false;
 }
 
 void AlgGeom::SceneContent::buildScenario()
@@ -860,13 +877,275 @@ void AlgGeom::SceneContent::buildPr3a()
     std::chrono::duration<double> durNaiveSeconds = endNaive - startNaive;
     std::cout << "RESULTADO (SIN Octree): " << insideCountNaive << " dentro, " << (100 - insideCountNaive) << " fuera." << std::endl;
     std::cout << "Tiempo clasificar 100 puntos SIN Octree: " << durNaiveSeconds.count() << " s" << std::endl;
-
     auto endTotal = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> durTotalSeconds = endTotal - startTotal;
     std::cout << "Tiempo total de ejecucion pr3_a: " << durTotalSeconds.count() << " s" << std::endl;
 }
 
+namespace AlgGeom {
+    class DrawTrianglesList : public Model3D {
+    public:
+        DrawTrianglesList(const std::vector<Triangle3d*>& triangles, const vec4& color) {
+            Component* comp = new Component();
+            comp->_material._kdColor = color;
+            comp->_material._useUniformColor = true;
+            
+            for (Triangle3d* tri : triangles) {
+                GLuint startIdx = (GLuint)comp->_vertices.size();
+                vec3 a((float)tri->getA().getX(), (float)tri->getA().getY(), (float)tri->getA().getZ());
+                vec3 b((float)tri->getB().getX(), (float)tri->getB().getY(), (float)tri->getB().getZ());
+                vec3 c((float)tri->getC().getX(), (float)tri->getC().getY(), (float)tri->getC().getZ());
+                vec3 normal = glm::normalize(glm::cross(b - a, c - a));
+                
+                comp->_vertices.push_back(VAO::Vertex{ a, normal, vec2(0.0f) });
+                comp->_vertices.push_back(VAO::Vertex{ b, normal, vec2(0.0f) });
+                comp->_vertices.push_back(VAO::Vertex{ c, normal, vec2(0.0f) });
+                
+                comp->_indices[VAO::IBO_TRIANGLE].insert(comp->_indices[VAO::IBO_TRIANGLE].end(),
+                    { startIdx, startIdx+1, startIdx+2, RESTART_PRIMITIVE_INDEX });
+            }
+            
+            if (comp->_vertices.size() > 0) {
+                this->_components.push_back(std::unique_ptr<Component>(comp));
+                this->buildVao(comp);
+                this->calculateAABB();
+            } else {
+                delete comp;
+            }
+        }
+    };
+
+    // All AABB boxes combined into a SINGLE VAO for performance
+    class DrawBoxesList : public Model3D {
+    public:
+        DrawBoxesList(const std::vector<NodeOctree*>& nodes, const vec3& lineColor, float lineWidth = 3.0f) {
+            Component* comp = new Component();
+            comp->_material._lineColor = lineColor;
+            comp->_lineWidth = lineWidth;
+            
+            for (NodeOctree* node : nodes) {
+                vec3 mn = node->box.min();
+                vec3 mx = node->box.max();
+                GLuint s = (GLuint)comp->_vertices.size();
+                
+                // 8 vertices of the box
+                comp->_vertices.push_back(VAO::Vertex{ vec3(mn.x, mn.y, mn.z), vec3(0), vec2(0) });
+                comp->_vertices.push_back(VAO::Vertex{ vec3(mx.x, mn.y, mn.z), vec3(0), vec2(0) });
+                comp->_vertices.push_back(VAO::Vertex{ vec3(mx.x, mx.y, mn.z), vec3(0), vec2(0) });
+                comp->_vertices.push_back(VAO::Vertex{ vec3(mn.x, mx.y, mn.z), vec3(0), vec2(0) });
+                comp->_vertices.push_back(VAO::Vertex{ vec3(mn.x, mn.y, mx.z), vec3(0), vec2(0) });
+                comp->_vertices.push_back(VAO::Vertex{ vec3(mx.x, mn.y, mx.z), vec3(0), vec2(0) });
+                comp->_vertices.push_back(VAO::Vertex{ vec3(mx.x, mx.y, mx.z), vec3(0), vec2(0) });
+                comp->_vertices.push_back(VAO::Vertex{ vec3(mn.x, mx.y, mx.z), vec3(0), vec2(0) });
+                
+                // 12 edges as line indices
+                GLuint edges[] = {
+                    s+0,s+1, s+1,s+2, s+2,s+3, s+3,s+0,   // bottom
+                    s+4,s+5, s+5,s+6, s+6,s+7, s+7,s+4,   // top
+                    s+0,s+4, s+1,s+5, s+2,s+6, s+3,s+7    // verticals
+                };
+                for (int i = 0; i < 24; i += 2) {
+                    comp->_indices[VAO::IBO_LINE].push_back(edges[i]);
+                    comp->_indices[VAO::IBO_LINE].push_back(edges[i+1]);
+                    comp->_indices[VAO::IBO_LINE].push_back(RESTART_PRIMITIVE_INDEX);
+                }
+            }
+            
+            if (comp->_vertices.size() > 0) {
+                this->_components.push_back(std::unique_ptr<Component>(comp));
+                this->buildVao(comp);
+                this->calculateAABB();
+            } else {
+                delete comp;
+            }
+        }
+    };
+}
+
+void AlgGeom::SceneContent::buildPr4()
+{
+    std::cout << "\n============================================" << std::endl;
+    std::cout << "PRACTICA 4 - Colisiones interactivas con Octree" << std::endl;
+    std::cout << "============================================" << std::endl;
+
+    if (!_drawA_ref || !_drawB_ref) {
+        std::cout << "Se requieren 2 modelos cargados." << std::endl;
+        return;
+    }
+
+    // Clean up previous PR4 data
+    if (_tmA) { delete _tmA; _tmA = nullptr; }
+    if (_tmB) { delete _tmB; _tmB = nullptr; }
+    if (_octA) { delete _octA; _octA = nullptr; }
+    if (_octB) { delete _octB; _octB = nullptr; }
+    {
+        auto it = std::remove_if(_model.begin(), _model.end(), [&](std::unique_ptr<Model3D>& m) {
+            return m.get() == _pr4_reds || m.get() == _pr4_redsB ||
+                   m.get() == _pr4_boxesA || m.get() == _pr4_boxesB ||
+                   m.get() == _drawOctA_ref || m.get() == _drawOctB_ref;
+        });
+        _model.erase(it, _model.end());
+    }
+    _pr4_reds = nullptr; _pr4_redsB = nullptr;
+    _pr4_boxesA = nullptr; _pr4_boxesB = nullptr;
+    _drawOctA_ref = nullptr; _drawOctB_ref = nullptr;
+
+    // Wireframe mode
+    _drawA_ref->setTopologyVisibility(AlgGeom::VAO::IBO_TRIANGLE, false);
+    _drawA_ref->setTopologyVisibility(AlgGeom::VAO::IBO_LINE, true);
+    _drawB_ref->setTopologyVisibility(AlgGeom::VAO::IBO_TRIANGLE, false);
+    _drawB_ref->setTopologyVisibility(AlgGeom::VAO::IBO_LINE, true);
+
+    // Build TriangleModels in original OBJ space (same as DrawMesh VAO vertices)
+    _tmA = new TriangleModel(_currentModelPath);
+    _tmB = new TriangleModel(_currentModelPathB);
+
+    // Build Octrees in original OBJ space (same as DrawMesh VAO vertices)
+    // moveGeometryToOrigin only sets modelMatrix, NOT vertex positions
+    _octA = new Octree(_tmA, _currentModelPath);
+    _octB = new Octree(_tmB, _currentModelPathB);
+
+    // DrawOctree visuals
+    _drawOctA_ref = (new DrawOctree(_octA))->overrideModelName();
+    _drawOctA_ref->setModelMatrix(_drawA_ref->getModelMatrix());
+    this->addNewModel(_drawOctA_ref);
+
+    _drawOctB_ref = (new DrawOctree(_octB))->overrideModelName();
+    _drawOctB_ref->setModelMatrix(_drawB_ref->getModelMatrix());
+    this->addNewModel(_drawOctB_ref);
+
+    _isPr4Active = true;
+    std::cout << "Octrees construidos. Mueva los modelos con el Gizmo (T)." << std::endl;
+    updatePr4Interactive();
+}
+
+// Cheap per-frame sync: just update model matrices (no VAO creation)
+void AlgGeom::SceneContent::syncPr4Visuals()
+{
+    if (!_isPr4Active) return;
+    mat4 matA = _drawA_ref->getModelMatrix();
+    mat4 matB = _drawB_ref->getModelMatrix();
+    if (_drawOctA_ref) _drawOctA_ref->setModelMatrix(matA);
+    if (_drawOctB_ref) _drawOctB_ref->setModelMatrix(matB);
+    if (_pr4_reds)   _pr4_reds->setModelMatrix(matA);
+    if (_pr4_redsB)  _pr4_redsB->setModelMatrix(matB);
+    if (_pr4_boxesA) _pr4_boxesA->setModelMatrix(matA);
+    if (_pr4_boxesB) _pr4_boxesB->setModelMatrix(matB);
+}
+
+// Full collision recompute
+void AlgGeom::SceneContent::updatePr4Interactive(bool skipTriTest)
+{
+    if (!_isPr4Active || !_tmA || !_tmB || !_octA || !_octB || !_drawA_ref || !_drawB_ref) return;
+
+    syncPr4Visuals();
+
+    // Remove old collision visuals (max 4 objects)
+    auto it = std::remove_if(_model.begin(), _model.end(), [&](std::unique_ptr<Model3D>& m) {
+        return m.get() == _pr4_reds || m.get() == _pr4_redsB ||
+               m.get() == _pr4_boxesA || m.get() == _pr4_boxesB;
+    });
+    _model.erase(it, _model.end());
+    _pr4_reds = nullptr; _pr4_redsB = nullptr;
+    _pr4_boxesA = nullptr; _pr4_boxesB = nullptr;
+
+    // Offsets
+    mat4 matA = _drawA_ref->getModelMatrix();
+    mat4 matB = _drawB_ref->getModelMatrix();
+
+    // Collision
+    std::vector<NodeOctree*> nodesA, nodesB;
+    auto startCol = std::chrono::high_resolution_clock::now();
+    std::vector<Triangle3d*> intersected_triangles = _octA->collideWithMatrices(*_octB, matA, matB, nodesA, nodesB);
+    auto endCol = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> durColSeconds = endCol - startCol;
+
+    // Yellow boxes — ONE DrawBoxesList per model (1 VAO each!)
+    if (!nodesA.empty() && _showYellowBoxes) {
+        _pr4_boxesA = (new DrawBoxesList(nodesA, vec3(1.0f, 1.0f, 0.0f), 3.0f))->overrideModelName();
+        _pr4_boxesA->setModelMatrix(matA);
+        this->addNewModel(_pr4_boxesA);
+    }
+    if (!nodesB.empty() && _showYellowBoxes) {
+        _pr4_boxesB = (new DrawBoxesList(nodesB, vec3(1.0f, 1.0f, 0.0f), 3.0f))->overrideModelName();
+        _pr4_boxesB->setModelMatrix(matB);
+        this->addNewModel(_pr4_boxesB);
+    }
+
+    // Red triangles — separate by model
+    if (!intersected_triangles.empty()) {
+        auto facesA = _tmA->getFacesPtrs();
+        std::unordered_set<Triangle3d*> setA(facesA.begin(), facesA.end());
+
+        std::vector<Triangle3d*> trisFromA, trisFromB;
+        for (auto* tri : intersected_triangles) {
+            if (setA.count(tri)) trisFromA.push_back(tri);
+            else trisFromB.push_back(tri);
+        }
+
+        if (!trisFromA.empty()) {
+            _pr4_reds = new DrawTrianglesList(trisFromA, vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            _pr4_reds->overrideModelName();
+            _pr4_reds->setModelMatrix(matA);
+            this->addNewModel(_pr4_reds);
+        }
+        if (!trisFromB.empty()) {
+            _pr4_redsB = new DrawTrianglesList(trisFromB, vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            _pr4_redsB->overrideModelName();
+            _pr4_redsB->setModelMatrix(matB);
+            this->addNewModel(_pr4_redsB);
+        }
+    }
+
+    size_t totalNodes = nodesA.size() + nodesB.size();
+    std::cout << "\r[COLISION] Cajas: " << totalNodes
+              << " | Triangulos: " << intersected_triangles.size()
+              << " | Tiempo: " << durColSeconds.count() << "s     " << std::flush;
+}
+
+void AlgGeom::SceneContent::runPr4BruteForce()
+{
+    if (!_isPr4Active || !_tmA || !_tmB || !_drawA_ref || !_drawB_ref) return;
+
+    std::cout << "\n[TEST F. BRUTA INICIADO - Por favor espere...]\n";
+    
+    vec3 offsetA = vec3(_drawA_ref->getModelMatrix()[3]);
+    vec3 offsetB = vec3(_drawB_ref->getModelMatrix()[3]);
+    
+    auto startBF = std::chrono::high_resolution_clock::now();
+    auto facesA = _tmA->getFacesPtrs();
+    auto facesB = _tmB->getFacesPtrs();
+    int bfTries = 0;
+    int colisionesBrutas = 0;
+    
+    for (auto faceA : facesA) {
+        Vect3d aA(faceA->getA().getX() + offsetA.x, faceA->getA().getY() + offsetA.y, faceA->getA().getZ() + offsetA.z);
+        Vect3d aB(faceA->getB().getX() + offsetA.x, faceA->getB().getY() + offsetA.y, faceA->getB().getZ() + offsetA.z);
+        Vect3d aC(faceA->getC().getX() + offsetA.x, faceA->getC().getY() + offsetA.y, faceA->getC().getZ() + offsetA.z);
+        Triangle3d offA(aA, aB, aC);
+
+        for (auto faceB : facesB) {
+            bfTries++;
+            Vect3d bA(faceB->getA().getX() + offsetB.x, faceB->getA().getY() + offsetB.y, faceB->getA().getZ() + offsetB.z);
+            Vect3d bB(faceB->getB().getX() + offsetB.x, faceB->getB().getY() + offsetB.y, faceB->getB().getZ() + offsetB.z);
+            Vect3d bC(faceB->getC().getX() + offsetB.x, faceB->getC().getY() + offsetB.y, faceB->getC().getZ() + offsetB.z);
+            Triangle3d offB(bA, bB, bC);
+
+            if (offA.tri_tri(offB)) {
+                colisionesBrutas++;
+            }
+        }
+    }
+    auto endBF = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> durBFSeconds = endBF - startBF;
+
+    std::cout << "Tests tri-tri Fuerza Bruta = " << bfTries << " (triangulos chocando = " << colisionesBrutas << ")" << std::endl;
+    std::cout << "Tiempo deteccion FUERZA BRUTA: " << durBFSeconds.count() << " s" << std::endl;
+}
+
 AlgGeom::SceneContent::SceneContent()
+
+
 {
 }
 

@@ -24,6 +24,7 @@
 #include "Vect2d.h"
 #include "Vect3d.h"
 #include "Ray3d.h"
+#include <glm/glm.hpp>
 
 class Octree;
 
@@ -32,6 +33,7 @@ class Octree;
 class TriangleModel 
 {    
 private:
+    std::vector<Vect3d>     _originalVertices;
     std::vector<Vect3d>     _vertices; 
     std::vector<Vect3d>     _normals;
     std::vector<Vect2d>     _textCoordinates;
@@ -63,6 +65,9 @@ public:
     size_t numTriangles();
 
     void buildFaces();
+    void translate(const Vect3d& offset);
+    void applyMatrix(const glm::mat4& matrix);
+
     std::vector<Triangle3d*> rayTravesal(Ray3d &r);
     bool hasOddIntersections(Ray3d &r);
     bool pointIntoMeshOct(Vect3d &p);

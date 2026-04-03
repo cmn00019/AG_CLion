@@ -132,6 +132,78 @@ bool Triangle3d::tri_AABB(AABB& box)
     return true;
 }
 
+bool Triangle3d::tri_tri(Triangle3d& tri)
+{
+	Vect3d v0 = _a, v1 = _b, v2 = _c;
+	Vect3d u0 = tri._a, u1 = tri._b, u2 = tri._c;
+	
+	Vect3d e1 = v1.sub(v0);
+	Vect3d e2 = v2.sub(v0);
+	Vect3d n1 = e1.xProduct(e2);
+	
+	double d1 = -n1.dot(v0);
+	
+	double du0 = n1.dot(u0) + d1;
+	double du1 = n1.dot(u1) + d1;
+	double du2 = n1.dot(u2) + d1;
+	
+	if (std::abs(du0) < 1e-8 && std::abs(du1) < 1e-8 && std::abs(du2) < 1e-8) {
+		return false; // Coplanar ignorado
+	}
+	
+	if (du0 * du1 > 0.0 && du0 * du2 > 0.0) return false;
+	
+	Vect3d f1 = u1.sub(u0);
+	Vect3d f2 = u2.sub(u0);
+	Vect3d n2 = f1.xProduct(f2);
+	
+	double d2 = -n2.dot(u0);
+	
+	double dv0 = n2.dot(v0) + d2;
+	double dv1 = n2.dot(v1) + d2;
+	double dv2 = n2.dot(v2) + d2;
+	
+	if (dv0 * dv1 > 0.0 && dv0 * dv2 > 0.0) return false;
+	
+	Vect3d D = n1.xProduct(n2);
+	
+	double isect1[2], isect2[2];
+	
+	auto compute_interval = [](double d0, double d1, double d2, double p0, double p1, double p2, double isect[2]) {
+		if (d0 * d1 < 0.0) {
+			isect[0] = p0 + (p1 - p0) * d0 / (d0 - d1);
+			if (d0 * d2 < 0.0) {
+				isect[1] = p0 + (p2 - p0) * d0 / (d0 - d2);
+			} else {
+				isect[1] = p1 + (p2 - p1) * d1 / (d1 - d2);
+			}
+		} else {
+			isect[0] = p2 + (p0 - p2) * d2 / (d2 - d0);
+			isect[1] = p2 + (p1 - p2) * d2 / (d2 - d1);
+		}
+		if (isect[0] > isect[1]) std::swap(isect[0], isect[1]);
+	};
+	
+	double p0, p1, p2, pu0, pu1, pu2;
+	if (std::abs(D.getX()) >= std::abs(D.getY()) && std::abs(D.getX()) >= std::abs(D.getZ())) {
+		p0 = v0.getX(); p1 = v1.getX(); p2 = v2.getX();
+		pu0 = u0.getX(); pu1 = u1.getX(); pu2 = u2.getX();
+	} else if (std::abs(D.getY()) >= std::abs(D.getX()) && std::abs(D.getY()) >= std::abs(D.getZ())) {
+		p0 = v0.getY(); p1 = v1.getY(); p2 = v2.getY();
+		pu0 = u0.getY(); pu1 = u1.getY(); pu2 = u2.getY();
+	} else {
+		p0 = v0.getZ(); p1 = v1.getZ(); p2 = v2.getZ();
+		pu0 = u0.getZ(); pu1 = u1.getZ(); pu2 = u2.getZ();
+	}
+	
+	compute_interval(dv0, dv1, dv2, p0, p1, p2, isect1);
+	compute_interval(du0, du1, du2, pu0, pu1, pu2, isect2);
+	
+	if (isect1[1] < isect2[0] || isect2[1] < isect1[0]) return false;
+	
+	return true;
+}
+
 Triangle3d::PointPosition Triangle3d::classify(Vect3d & point)
 {
     Vect3d n = this->normal();

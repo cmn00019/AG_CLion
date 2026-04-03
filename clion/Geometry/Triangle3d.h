@@ -104,6 +104,12 @@ public:
 	bool tri_AABB(AABB& box);
 
 	/**
+	*	@brief Prueba de interseccion Triangulo-Triangulo.
+	*/
+	bool tri_tri(Triangle3d& tri);
+
+
+	/**
 	*	@brief Devuelve la posicion del punto respecto al plano del triangulo.
 	*/
 	PointPosition classify(Vect3d& point);

@@ -8,6 +8,7 @@
 #include "GuiUtilities.h"
 #include "ImGuiFileDialog.h"
 #include "InputManager.h"
+#include <chrono>
 
 AlgGeom::GUI::GUI()
 {
@@ -97,6 +98,15 @@ void AlgGeom::GUI::processSelectedFile(FileDialog fileDialog, const std::string&
 		model->moveGeometryToOrigin();
 		sceneContent->addNewModel(model);
 		sceneContent->_currentModelPath = filename;
+		sceneContent->_drawA_ref = model;
+	}
+	else if (fileDialog == FileDialog::OPEN_MESH_B)
+	{
+		Model3D* model = (new DrawMesh())->loadModelOBJ(filename);
+		model->moveGeometryToOrigin();
+		sceneContent->addNewModel(model);
+		sceneContent->_currentModelPathB = filename;
+		sceneContent->_drawB_ref = model;
 	}
 }
 
@@ -121,11 +131,40 @@ void AlgGeom::GUI::renderGuizmo(Model3D::Component* component, SceneContent* sce
 		{
 			mat4 modelMatrix = model->getModelMatrix();
 
+			bool isKeyTranslating = false;
+			float translationSpeed = 10.0f * ImGui::GetIO().DeltaTime;
+			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftShift)) translationSpeed *= 5.0f;
+			
+			vec3 translation(0.0f);
+			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_J)) { translation.x -= translationSpeed; isKeyTranslating = true; } // Left
+			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_L)) { translation.x += translationSpeed; isKeyTranslating = true; } // Right
+			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_I)) { translation.z -= translationSpeed; isKeyTranslating = true; } // Forward
+			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_K)) { translation.z += translationSpeed; isKeyTranslating = true; } // Backward
+
+			if (isKeyTranslating) {
+			    // Apply world-space translation
+			    modelMatrix = glm::translate(mat4(1.0f), translation) * modelMatrix;
+			}
+
 			ImGuiIO& io = ImGui::GetIO();
 			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 			ImGuizmo::Manipulate(&(viewMatrix[0][0]), &(projectionMatrix[0][0]), _currentGizmoOperation, _currentGizmoMode, &(modelMatrix[0][0]), nullptr, nullptr);
 
 			model->setModelMatrix(modelMatrix);
+
+			static bool wasUsingGizmo = false;
+			bool isUsing = ImGuizmo::IsUsing() || isKeyTranslating;
+
+			if (isUsing && sceneContent->_isPr4Active) {
+			    sceneContent->syncPr4Visuals();
+			    
+			    // Actualizar en tiempo real para que los triángulos rojos sean fluidos
+			    sceneContent->updatePr4Interactive();
+			}
+			if (wasUsingGizmo && !isUsing && sceneContent->_isPr4Active) {
+			    sceneContent->updatePr4Interactive();
+			}
+			wasUsingGizmo = isUsing;
 		}
 	}
 }
@@ -304,6 +343,12 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 		}
 
 		ImGui::SameLine();
+		if (ImGui::Button("Open Model B"))
+		{
+			_fileDialog = FileDialog::OPEN_MESH_B;
+		}
+
+		ImGui::SameLine();
 		if (ImGui::Button("PR1 A"))
 		{
 			sceneContent->clearScene();
@@ -378,7 +423,47 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			}
 		}
 
+		ImGui::SameLine();
+		if (ImGui::Button("PR4 Interactivo"))
+		{
+			if (sceneContent->_drawA_ref == nullptr || sceneContent->_drawB_ref == nullptr)
+			{
+				std::cout << "Por favor, cargue dos modelos (Open Model y Open Model B) antes de ejecutar la practica 4." << std::endl;
+			}
+			else
+			{
+				sceneContent->buildPr4();
+				_modelCompSelected = nullptr;
+				
+				showOctreeWhite = true;
+				showOctreeGrey = true;
+				showOctreeBlack = true;
+				showMesh = true;
+			}
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("PR4: F. Bruta (Lento)"))
+		{
+		    if (sceneContent->_isPr4Active) {
+		        sceneContent->runPr4BruteForce();
+		    } else {
+		        std::cout << "Inicie primero 'PR4 Interactivo'" << std::endl;
+		    }
+		}
+
 		GuiUtilities::leaveSpace(1);
+
+		ImGui::Text("Filtros Pr4");
+		ImGui::Separator();
+		if (sceneContent->_isPr4Active) {
+		    if (ImGui::Checkbox("Cajas Amarillas", &sceneContent->_showYellowBoxes)) {
+		        sceneContent->updatePr4Interactive();
+		    }
+		}
+
+		GuiUtilities::leaveSpace(1);
+
 		ImGui::Text("Filtros Pr3A");
 		ImGui::Separator();
 		bool filtersChanged = false;

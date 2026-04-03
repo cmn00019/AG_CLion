@@ -26,6 +26,8 @@ public:
 
 	bool AABB_tri(Triangle3d& t);
 	bool rayIntersects(Ray3d& ray);
+	bool box_box(AABB& b);
+
 
 	friend std::ostream& operator<<(std::ostream& os, const AABB& aabb);
 };

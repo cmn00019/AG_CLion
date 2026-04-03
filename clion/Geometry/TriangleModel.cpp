@@ -74,6 +74,29 @@ void TriangleModel::buildFaces() {
     }
 }
 
+void TriangleModel::translate(const Vect3d& offset)
+{
+    Vect3d mutOffset = offset;
+    for (auto& v : _vertices) {
+        v = v.add(mutOffset);
+    }
+    buildFaces();
+}
+
+void TriangleModel::applyMatrix(const glm::mat4& matrix)
+{
+    if (_originalVertices.empty()) {
+        _originalVertices = _vertices; // Save the original state upon first transform
+    }
+    for (size_t i = 0; i < _vertices.size(); i++) {
+        glm::vec4 p = matrix * glm::vec4(_originalVertices[i].getX(), _originalVertices[i].getY(), _originalVertices[i].getZ(), 1.0f);
+        _vertices[i] = Vect3d(p.x, p.y, p.z);
+    }
+    buildFaces();
+}
+
+
+
 std::vector<Triangle3d*> TriangleModel::rayTravesal(Ray3d &r)
 {
     std::vector<Triangle3d*> result;
@@ -155,7 +178,24 @@ void TriangleModel::loadModelBinaryFile(const std::string& path)
         this->_indices.resize(numIndices);
         fin.read((char*)this->_indices.data(), sizeof(GLuint) * numIndices);
     }
+    
+    // HEAL VTABLE POINTERS (Since the .bin file contains raw memory dumps of objects with virtual functions, 
+    // their vtable pointers are corrupted due to ASLR between different runs).
+    // We reconstruct the objects in place using placement-new.
+    for (size_t i = 0; i < numVertices; i++) {
+        double vx = this->_vertices[i].get(0), vy = this->_vertices[i].get(1), vz = this->_vertices[i].get(2);
+        double nx = this->_normals[i].get(0), ny = this->_normals[i].get(1), nz = this->_normals[i].get(2);
+        new (&this->_vertices[i]) Vect3d(vx, vy, vz);
+        new (&this->_normals[i]) Vect3d(nx, ny, nz);
+        
+        if (numTextCoords > 0) {
+            double tx = this->_textCoordinates[i].getX(), ty = this->_textCoordinates[i].getY();
+            new (&this->_textCoordinates[i]) Vect2d(tx, ty);
+        }
+    }
 }
+
+
 
 void TriangleModel::processMesh(aiMesh* mesh, const aiScene* scene, const std::string& folder)
 {
