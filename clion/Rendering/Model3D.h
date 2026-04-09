@@ -112,6 +112,10 @@ namespace AlgGeom
 		Model3D* setLineWidth(float width);
 		Model3D* setPointSize(float size);
 		Model3D* setTopologyVisibility(VAO::IBO_slots topology, bool visible);
+		Model3D* setVisibility(bool visible) {
+			for (auto& comp : _components) comp->_enabled = visible;
+			return this;
+		}
 	};
 }
 

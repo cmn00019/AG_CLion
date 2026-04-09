@@ -132,14 +132,15 @@ void AlgGeom::GUI::renderGuizmo(Model3D::Component* component, SceneContent* sce
 			mat4 modelMatrix = model->getModelMatrix();
 
 			bool isKeyTranslating = false;
-			float translationSpeed = 10.0f * ImGui::GetIO().DeltaTime;
+			
+			float dt = ImGui::GetIO().DeltaTime;
+			if (dt > 0.1f) dt = 0.1f; // Cap para evitar teletransportes tras picos de lag (Fuerza Bruta)
+			float translationSpeed = 1.0f * dt; // Muy poco a poco
 			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftShift)) translationSpeed *= 5.0f;
 			
 			vec3 translation(0.0f);
 			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_J)) { translation.x -= translationSpeed; isKeyTranslating = true; } // Left
 			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_L)) { translation.x += translationSpeed; isKeyTranslating = true; } // Right
-			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_I)) { translation.z -= translationSpeed; isKeyTranslating = true; } // Forward
-			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_K)) { translation.z += translationSpeed; isKeyTranslating = true; } // Backward
 
 			if (isKeyTranslating) {
 			    // Apply world-space translation
@@ -156,13 +157,18 @@ void AlgGeom::GUI::renderGuizmo(Model3D::Component* component, SceneContent* sce
 			bool isUsing = ImGuizmo::IsUsing() || isKeyTranslating;
 
 			if (isUsing && sceneContent->_isPr4Active) {
-			    sceneContent->syncPr4Visuals();
-			    
-			    // Actualizar en tiempo real para que los triángulos rojos sean fluidos
-			    sceneContent->updatePr4Interactive();
+			    // Actualizamos las visualizaciones de las cajas de colisiones dinámicamente en tiempo real
+			    // Omitiendo el recálculo y dibujado pesado de los triángulos rojos (skipTriTest=true)
+			    sceneContent->updatePr4Interactive(true); 
 			}
 			if (wasUsingGizmo && !isUsing && sceneContent->_isPr4Active) {
-			    sceneContent->updatePr4Interactive();
+			    // Al soltar exactamente en el último frame, procesamos la colisión exhaustiva al completo (skipTriTest=false)
+			    sceneContent->updatePr4Interactive(false);
+			    
+			    if (sceneContent->_isBruteForceActive) {
+			        std::cout << "\n--- Ejecutando Comparativa (Paso 7) ---" << std::endl;
+			        sceneContent->runPr4BruteForce();
+			    }
 			}
 			wasUsingGizmo = isUsing;
 		}
@@ -424,7 +430,7 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 		}
 
 		ImGui::SameLine();
-		if (ImGui::Button("PR4 Interactivo"))
+		if (ImGui::Button("PR4B"))
 		{
 			if (sceneContent->_drawA_ref == nullptr || sceneContent->_drawB_ref == nullptr)
 			{
@@ -442,23 +448,24 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			}
 		}
 
-		ImGui::SameLine();
-		if (ImGui::Button("PR4: F. Bruta (Lento)"))
-		{
-		    if (sceneContent->_isPr4Active) {
-		        sceneContent->runPr4BruteForce();
-		    } else {
-		        std::cout << "Inicie primero 'PR4 Interactivo'" << std::endl;
-		    }
-		}
-
 		GuiUtilities::leaveSpace(1);
 
 		ImGui::Text("Filtros Pr4");
 		ImGui::Separator();
 		if (sceneContent->_isPr4Active) {
 		    if (ImGui::Checkbox("Cajas Amarillas", &sceneContent->_showYellowBoxes)) {
-		        sceneContent->updatePr4Interactive();
+		        if (sceneContent->_pr4_boxesA) sceneContent->_pr4_boxesA->setVisibility(sceneContent->_showYellowBoxes);
+		        if (sceneContent->_pr4_boxesB) sceneContent->_pr4_boxesB->setVisibility(sceneContent->_showYellowBoxes);
+		    }
+		    if (ImGui::Checkbox("Triangulos Rojos", &sceneContent->_showRedTriangles)) {
+		        if (sceneContent->_pr4_reds)   sceneContent->_pr4_reds->setVisibility(sceneContent->_showRedTriangles);
+		        if (sceneContent->_pr4_redsB)  sceneContent->_pr4_redsB->setVisibility(sceneContent->_showRedTriangles);
+		    }
+		    if (ImGui::Checkbox("Test Fuerza Bruta", &sceneContent->_isBruteForceActive)) {
+		        if (sceneContent->_isBruteForceActive) {
+		            std::cout << "\n--- Ejecutando Comparativa (Paso 7) ---" << std::endl;
+		            sceneContent->runPr4BruteForce();
+		        }
 		    }
 		}
 
@@ -502,18 +509,29 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 		GuiUtilities::leaveSpace(2);
 		ImGui::BeginChild("Components", ImVec2(200, 0), true);
 
-		unsigned globalIdx = 0;
+		bool isSelectedValid = false;
 
 		for (int modelIdx = 0; modelIdx < sceneContent->_model.size(); ++modelIdx)
 		{
 			for (int compIdx = 0; compIdx < sceneContent->_model[modelIdx]->_components.size(); ++compIdx)
 			{
+				if (_modelCompSelected == sceneContent->_model[modelIdx]->_components[compIdx].get())
+				{
+					isSelectedValid = true;
+				}
+
 				const std::string compName = sceneContent->_model[modelIdx]->getName() + ", " + "Comp. " + std::to_string(compIdx);
 				if (ImGui::Selectable(compName.c_str(), _modelCompSelected == sceneContent->_model[modelIdx]->_components[compIdx].get()))
 				{
 					_modelCompSelected = sceneContent->_model[modelIdx]->_components[compIdx].get();
+					isSelectedValid = true;
 				}
 			}
+		}
+
+		if (!isSelectedValid) 
+		{
+			_modelCompSelected = nullptr;
 		}
 
 		ImGui::EndChild();

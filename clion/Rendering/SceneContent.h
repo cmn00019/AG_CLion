@@ -21,6 +21,8 @@ namespace AlgGeom
 		std::string								_currentModelPathB;
 		bool									_isPr4Active = false;
 		bool									_showYellowBoxes = true;
+		bool									_showRedTriangles = true;
+		bool									_isBruteForceActive = false;
 		
 		::TriangleModel*						_tmA = nullptr;
 		::TriangleModel*						_tmB = nullptr;
@@ -52,6 +54,7 @@ namespace AlgGeom
 		void buildPr4();
 		void updatePr4Interactive(bool skipTriTest = false);
 		void syncPr4Visuals();
+		void clearPr4Visuals();
 		void runPr4BruteForce();
 		Model3D* getModel(Model3D::Component* component);
 

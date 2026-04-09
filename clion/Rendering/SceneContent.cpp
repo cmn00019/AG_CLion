@@ -1033,14 +1033,8 @@ void AlgGeom::SceneContent::syncPr4Visuals()
     if (_pr4_boxesB) _pr4_boxesB->setModelMatrix(matB);
 }
 
-// Full collision recompute
-void AlgGeom::SceneContent::updatePr4Interactive(bool skipTriTest)
+void AlgGeom::SceneContent::clearPr4Visuals()
 {
-    if (!_isPr4Active || !_tmA || !_tmB || !_octA || !_octB || !_drawA_ref || !_drawB_ref) return;
-
-    syncPr4Visuals();
-
-    // Remove old collision visuals (max 4 objects)
     auto it = std::remove_if(_model.begin(), _model.end(), [&](std::unique_ptr<Model3D>& m) {
         return m.get() == _pr4_reds || m.get() == _pr4_redsB ||
                m.get() == _pr4_boxesA || m.get() == _pr4_boxesB;
@@ -1048,32 +1042,47 @@ void AlgGeom::SceneContent::updatePr4Interactive(bool skipTriTest)
     _model.erase(it, _model.end());
     _pr4_reds = nullptr; _pr4_redsB = nullptr;
     _pr4_boxesA = nullptr; _pr4_boxesB = nullptr;
+}
 
-    // Offsets
+// Recálculo completo de la colisión de la Práctica 4 interactiva
+void AlgGeom::SceneContent::updatePr4Interactive(bool skipTriTest)
+{
+    if (!_isPr4Active || !_tmA || !_tmB || !_octA || !_octB || !_drawA_ref || !_drawB_ref) return;
+
+    syncPr4Visuals();
+
+    // Borramos los objetos visuales de colisión previos 
+    clearPr4Visuals();
+
+    // Posiciones actuales
     mat4 matA = _drawA_ref->getModelMatrix();
     mat4 matB = _drawB_ref->getModelMatrix();
 
-    // Collision
+    // Lanzamos algoritmo de colisión con matrices de traslación/rotación aplicadas
     std::vector<NodeOctree*> nodesA, nodesB;
     auto startCol = std::chrono::high_resolution_clock::now();
-    std::vector<Triangle3d*> intersected_triangles = _octA->collideWithMatrices(*_octB, matA, matB, nodesA, nodesB);
+    std::vector<Triangle3d*> intersected_triangles = _octA->collideWithMatrices(*_octB, matA, matB, nodesA, nodesB, skipTriTest);
     auto endCol = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> durColSeconds = endCol - startCol;
 
-    // Yellow boxes — ONE DrawBoxesList per model (1 VAO each!)
-    if (!nodesA.empty() && _showYellowBoxes) {
-        _pr4_boxesA = (new DrawBoxesList(nodesA, vec3(1.0f, 1.0f, 0.0f), 3.0f))->overrideModelName();
+    // Cajas amarillas para los nodos colisionando (un solo VAO de dibujado por modelo)
+    vec3 boxColor = vec3(1.0f, 1.0f, 0.0f);
+
+    if (!nodesA.empty()) {
+        _pr4_boxesA = (new DrawBoxesList(nodesA, boxColor, 3.0f))->overrideModelName();
+        _pr4_boxesA->setVisibility(_showYellowBoxes);
         _pr4_boxesA->setModelMatrix(matA);
         this->addNewModel(_pr4_boxesA);
     }
-    if (!nodesB.empty() && _showYellowBoxes) {
-        _pr4_boxesB = (new DrawBoxesList(nodesB, vec3(1.0f, 1.0f, 0.0f), 3.0f))->overrideModelName();
+    if (!nodesB.empty()) {
+        _pr4_boxesB = (new DrawBoxesList(nodesB, boxColor, 3.0f))->overrideModelName();
+        _pr4_boxesB->setVisibility(_showYellowBoxes);
         _pr4_boxesB->setModelMatrix(matB);
         this->addNewModel(_pr4_boxesB);
     }
 
-    // Red triangles — separate by model
-    if (!intersected_triangles.empty()) {
+    // Triángulos de intersección en rojo (se asignan al modelo correspondiente)
+    if (!skipTriTest && !intersected_triangles.empty()) {
         auto facesA = _tmA->getFacesPtrs();
         std::unordered_set<Triangle3d*> setA(facesA.begin(), facesA.end());
 
@@ -1085,12 +1094,14 @@ void AlgGeom::SceneContent::updatePr4Interactive(bool skipTriTest)
 
         if (!trisFromA.empty()) {
             _pr4_reds = new DrawTrianglesList(trisFromA, vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            _pr4_reds->setVisibility(_showRedTriangles);
             _pr4_reds->overrideModelName();
             _pr4_reds->setModelMatrix(matA);
             this->addNewModel(_pr4_reds);
         }
         if (!trisFromB.empty()) {
             _pr4_redsB = new DrawTrianglesList(trisFromB, vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            _pr4_redsB->setVisibility(_showRedTriangles);
             _pr4_redsB->overrideModelName();
             _pr4_redsB->setModelMatrix(matB);
             this->addNewModel(_pr4_redsB);
@@ -1139,8 +1150,9 @@ void AlgGeom::SceneContent::runPr4BruteForce()
     auto endBF = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> durBFSeconds = endBF - startBF;
 
-    std::cout << "Tests tri-tri Fuerza Bruta = " << bfTries << " (triangulos chocando = " << colisionesBrutas << ")" << std::endl;
-    std::cout << "Tiempo deteccion FUERZA BRUTA: " << durBFSeconds.count() << " s" << std::endl;
+    std::cout << "[INFO] Evaluaciones tri-tri (Operaciones ejecutadas): " << bfTries << "\n"
+              << "[INFO] Pares de triangulos que colisionan : " << colisionesBrutas << std::endl;
+    std::cout << "Tiempo : " << durBFSeconds.count() << " s" << std::endl;
 }
 
 AlgGeom::SceneContent::SceneContent()
