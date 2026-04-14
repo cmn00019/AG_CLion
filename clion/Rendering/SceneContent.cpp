@@ -965,15 +965,15 @@ namespace AlgGeom {
 void AlgGeom::SceneContent::buildPr4()
 {
     std::cout << "\n============================================" << std::endl;
-    std::cout << "PRACTICA 4 - Colisiones interactivas con Octree" << std::endl;
+    std::cout << "PRACTICA 4 - Colisiones con Octree" << std::endl;
     std::cout << "============================================" << std::endl;
 
     if (!_drawA_ref || !_drawB_ref) {
-        std::cout << "Se requieren 2 modelos cargados." << std::endl;
+        std::cout << "Se requieren 2 modelos cargados" << std::endl;
         return;
     }
 
-    // Clean up previous PR4 data
+    // Limpiamos octree
     if (_tmA) { delete _tmA; _tmA = nullptr; }
     if (_tmB) { delete _tmB; _tmB = nullptr; }
     if (_octA) { delete _octA; _octA = nullptr; }
@@ -990,22 +990,21 @@ void AlgGeom::SceneContent::buildPr4()
     _pr4_boxesA = nullptr; _pr4_boxesB = nullptr;
     _drawOctA_ref = nullptr; _drawOctB_ref = nullptr;
 
-    // Wireframe mode
+    // Wireframe
     _drawA_ref->setTopologyVisibility(AlgGeom::VAO::IBO_TRIANGLE, false);
     _drawA_ref->setTopologyVisibility(AlgGeom::VAO::IBO_LINE, true);
     _drawB_ref->setTopologyVisibility(AlgGeom::VAO::IBO_TRIANGLE, false);
     _drawB_ref->setTopologyVisibility(AlgGeom::VAO::IBO_LINE, true);
 
-    // Build TriangleModels in original OBJ space (same as DrawMesh VAO vertices)
+    // Construimos los TriangleModels
     _tmA = new TriangleModel(_currentModelPath);
     _tmB = new TriangleModel(_currentModelPathB);
 
-    // Build Octrees in original OBJ space (same as DrawMesh VAO vertices)
-    // moveGeometryToOrigin only sets modelMatrix, NOT vertex positions
+    // Construimos los Octrees
     _octA = new Octree(_tmA, _currentModelPath);
     _octB = new Octree(_tmB, _currentModelPathB);
 
-    // DrawOctree visuals
+    // DrawOctree
     _drawOctA_ref = (new DrawOctree(_octA))->overrideModelName();
     _drawOctA_ref->setModelMatrix(_drawA_ref->getModelMatrix());
     this->addNewModel(_drawOctA_ref);
@@ -1015,11 +1014,9 @@ void AlgGeom::SceneContent::buildPr4()
     this->addNewModel(_drawOctB_ref);
 
     _isPr4Active = true;
-    std::cout << "Octrees construidos. Mueva los modelos con el Gizmo (T)." << std::endl;
-    updatePr4Interactive();
+    update_pr4();
 }
 
-// Cheap per-frame sync: just update model matrices (no VAO creation)
 void AlgGeom::SceneContent::syncPr4Visuals()
 {
     if (!_isPr4Active) return;
@@ -1044,28 +1041,27 @@ void AlgGeom::SceneContent::clearPr4Visuals()
     _pr4_boxesA = nullptr; _pr4_boxesB = nullptr;
 }
 
-// Recálculo completo de la colisión de la Práctica 4 interactiva
-void AlgGeom::SceneContent::updatePr4Interactive(bool skipTriTest)
+// Recálculo completo de la colisión
+void AlgGeom::SceneContent::update_pr4(bool skipTriTest)
 {
     if (!_isPr4Active || !_tmA || !_tmB || !_octA || !_octB || !_drawA_ref || !_drawB_ref) return;
 
     syncPr4Visuals();
 
-    // Borramos los objetos visuales de colisión previos 
     clearPr4Visuals();
 
     // Posiciones actuales
     mat4 matA = _drawA_ref->getModelMatrix();
     mat4 matB = _drawB_ref->getModelMatrix();
 
-    // Lanzamos algoritmo de colisión con matrices de traslación/rotación aplicadas
+    //Colisión
     std::vector<NodeOctree*> nodesA, nodesB;
     auto startCol = std::chrono::high_resolution_clock::now();
-    std::vector<Triangle3d*> intersected_triangles = _octA->collideWithMatrices(*_octB, matA, matB, nodesA, nodesB, skipTriTest);
+    std::vector<Triangle3d*> intersected_triangles = _octA->collide(*_octB, matA, matB, nodesA, nodesB, skipTriTest);
     auto endCol = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> durColSeconds = endCol - startCol;
 
-    // Cajas amarillas para los nodos colisionando (un solo VAO de dibujado por modelo)
+    // Cajas amarillas para colisión
     vec3 boxColor = vec3(1.0f, 1.0f, 0.0f);
 
     if (!nodesA.empty()) {
@@ -1081,7 +1077,7 @@ void AlgGeom::SceneContent::updatePr4Interactive(bool skipTriTest)
         this->addNewModel(_pr4_boxesB);
     }
 
-    // Triángulos de intersección en rojo (se asignan al modelo correspondiente)
+    // Triángulos de intersección rojos
     if (!skipTriTest && !intersected_triangles.empty()) {
         auto facesA = _tmA->getFacesPtrs();
         std::unordered_set<Triangle3d*> setA(facesA.begin(), facesA.end());
@@ -1108,10 +1104,12 @@ void AlgGeom::SceneContent::updatePr4Interactive(bool skipTriTest)
         }
     }
 
-    size_t totalNodes = nodesA.size() + nodesB.size();
-    std::cout << "\r[COLISION] Cajas: " << totalNodes
-              << " | Triangulos: " << intersected_triangles.size()
-              << " | Tiempo: " << durColSeconds.count() << "s     " << std::flush;
+    if (!skipTriTest) {
+        size_t totalNodes = nodesA.size() + nodesB.size();
+        std::cout << "[COLISION] Cajas: " << totalNodes
+                  << " | Triangulos: " << intersected_triangles.size()
+                  << " | Tiempo: " << durColSeconds.count() << "s" << std::endl;
+    }
 }
 
 void AlgGeom::SceneContent::runPr4BruteForce()
@@ -1127,7 +1125,6 @@ void AlgGeom::SceneContent::runPr4BruteForce()
     auto facesA = _tmA->getFacesPtrs();
     auto facesB = _tmB->getFacesPtrs();
     int bfTries = 0;
-    int colisionesBrutas = 0;
     
     for (auto faceA : facesA) {
         Vect3d aA(faceA->getA().getX() + offsetA.x, faceA->getA().getY() + offsetA.y, faceA->getA().getZ() + offsetA.z);
@@ -1142,16 +1139,13 @@ void AlgGeom::SceneContent::runPr4BruteForce()
             Vect3d bC(faceB->getC().getX() + offsetB.x, faceB->getC().getY() + offsetB.y, faceB->getC().getZ() + offsetB.z);
             Triangle3d offB(bA, bB, bC);
 
-            if (offA.tri_tri(offB)) {
-                colisionesBrutas++;
-            }
+            offA.tri_tri(offB);
         }
     }
     auto endBF = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> durBFSeconds = endBF - startBF;
 
-    std::cout << "[INFO] Evaluaciones tri-tri (Operaciones ejecutadas): " << bfTries << "\n"
-              << "[INFO] Pares de triangulos que colisionan : " << colisionesBrutas << std::endl;
+    std::cout << "[INFO] Evaluaciones tri-tri (Operaciones ejecutadas): " << bfTries << "\n";
     std::cout << "Tiempo : " << durBFSeconds.count() << " s" << std::endl;
 }
 

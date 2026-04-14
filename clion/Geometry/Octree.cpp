@@ -196,73 +196,8 @@ int Octree::countRayIntersections(NodeOctree* node, Ray3d& ray, std::vector<Tria
     return hits;
 }
 
-void Octree::colisiona(NodeOctree* nodoA, NodeOctree* nodoB, std::vector<std::pair<NodeOctree*, NodeOctree*>>& result_nodos)
-{
-    if (!nodoA->box.box_box(nodoB->box)) return;
 
-    if (nodoA->esHoja() && nodoB->esHoja()) {
-        result_nodos.push_back({nodoA, nodoB});
-    } else if (nodoA->esHoja()) {
-        for (int j = 0; j < 8; j++) {
-            if (nodoB->hijos[j] != nullptr) {
-                colisiona(nodoA, nodoB->hijos[j], result_nodos);
-            }
-        }
-    } else if (nodoB->esHoja()) {
-        for (int i = 0; i < 8; i++) {
-            if (nodoA->hijos[i] != nullptr) {
-                colisiona(nodoA->hijos[i], nodoB, result_nodos);
-            }
-        }
-    } else {
-        for (int i = 0; i < 8; i++) {
-            if (nodoA->hijos[i] != nullptr) {
-                for (int j = 0; j < 8; j++) {
-                    if (nodoB->hijos[j] != nullptr) {
-                        colisiona(nodoA->hijos[i], nodoB->hijos[j], result_nodos);
-                    }
-                }
-            }
-        }
-    }
-}
-
-std::vector<Triangle3d *> Octree::collide(Octree &obj, std::vector<NodeOctree*>& out_intersected_nodes)
-{
-    std::vector<std::pair<NodeOctree*, NodeOctree*>> result_nodos;
-    if (this->raiz != nullptr && obj.raiz != nullptr) {
-        colisiona(this->raiz, obj.raiz, result_nodos);
-    }
-
-    std::vector<Triangle3d *> result_triangles;
-    for (auto& par : result_nodos) {
-        bool pushedNodeA = false;
-        bool pushedNodeB = false;
-
-        for (auto tri_j : par.first->pContenidos) {
-            for (auto tri_k : par.second->pContenidos) {
-                if (tri_j->tri_tri(*tri_k)) {
-                    if (std::find(result_triangles.begin(), result_triangles.end(), tri_j) == result_triangles.end())
-                        result_triangles.push_back(tri_j);
-                    if (std::find(result_triangles.begin(), result_triangles.end(), tri_k) == result_triangles.end())
-                        result_triangles.push_back(tri_k);
-
-                    if (!pushedNodeA) {
-                        out_intersected_nodes.push_back(par.first);
-                        pushedNodeA = true;
-                    }
-                    if (!pushedNodeB) {
-                        out_intersected_nodes.push_back(par.second);
-                        pushedNodeB = true;
-                    }
-                }
-            }
-        }
-    }
-    return result_triangles;
-}
-
-void Octree::colisionaMat(NodeOctree* nodoA, NodeOctree* nodoB, const mat4& matA, const mat4& matB, AABB boxA, AABB boxB, std::vector<std::pair<NodeOctree*, NodeOctree*>>& result_nodos)
+void Octree::colisiona(NodeOctree* nodoA, NodeOctree* nodoB, const mat4& matA, const mat4& matB, AABB boxA, AABB boxB, std::vector<std::pair<NodeOctree*, NodeOctree*>>& result_nodos)
 {
     if (!boxA.box_box(boxB)) return;
 
@@ -271,12 +206,12 @@ void Octree::colisionaMat(NodeOctree* nodoA, NodeOctree* nodoB, const mat4& matA
     } else if (nodoA->esHoja()) {
         for (int j = 0; j < 8; j++) {
             if (nodoB->hijos[j] != nullptr)
-                colisionaMat(nodoA, nodoB->hijos[j], matA, matB, boxA, nodoB->hijos[j]->box.dot(matB), result_nodos);
+                colisiona(nodoA, nodoB->hijos[j], matA, matB, boxA, nodoB->hijos[j]->box.dot(matB), result_nodos);
         }
     } else if (nodoB->esHoja()) {
         for (int i = 0; i < 8; i++) {
             if (nodoA->hijos[i] != nullptr)
-                colisionaMat(nodoA->hijos[i], nodoB, matA, matB, nodoA->hijos[i]->box.dot(matA), boxB, result_nodos);
+                colisiona(nodoA->hijos[i], nodoB, matA, matB, nodoA->hijos[i]->box.dot(matA), boxB, result_nodos);
         }
     } else {
         AABB childBoxesB[8];
@@ -291,7 +226,7 @@ void Octree::colisionaMat(NodeOctree* nodoA, NodeOctree* nodoB, const mat4& matA
                 AABB childBoxA = nodoA->hijos[i]->box.dot(matA);
                 for (int j = 0; j < 8; j++) {
                     if (hasB[j]) {
-                        colisionaMat(nodoA->hijos[i], nodoB->hijos[j], matA, matB, childBoxA, childBoxesB[j], result_nodos);
+                        colisiona(nodoA->hijos[i], nodoB->hijos[j], matA, matB, childBoxA, childBoxesB[j], result_nodos);
                     }
                 }
             }
@@ -299,14 +234,14 @@ void Octree::colisionaMat(NodeOctree* nodoA, NodeOctree* nodoB, const mat4& matA
     }
 }
 
-std::vector<Triangle3d *> Octree::collideWithMatrices(Octree &obj, const mat4& matA, const mat4& matB,
+std::vector<Triangle3d *> Octree::collide(Octree &obj, const mat4& matA, const mat4& matB,
     std::vector<NodeOctree*>& out_nodesA, std::vector<NodeOctree*>& out_nodesB, bool skipTriTest)
 {
     std::vector<std::pair<NodeOctree*, NodeOctree*>> result_nodos;
     if (this->raiz != nullptr && obj.raiz != nullptr) {
         AABB rootA = this->raiz->box.dot(matA);
         AABB rootB = obj.raiz->box.dot(matB);
-        colisionaMat(this->raiz, obj.raiz, matA, matB, rootA, rootB, result_nodos);
+        colisiona(this->raiz, obj.raiz, matA, matB, rootA, rootB, result_nodos);
     }
 
     // Filtramos la duplicidad de nodos superpuestos usando conjuntos (Hash en O(1) en vez de O(n))

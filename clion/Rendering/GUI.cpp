@@ -131,22 +131,6 @@ void AlgGeom::GUI::renderGuizmo(Model3D::Component* component, SceneContent* sce
 		{
 			mat4 modelMatrix = model->getModelMatrix();
 
-			bool isKeyTranslating = false;
-			
-			float dt = ImGui::GetIO().DeltaTime;
-			if (dt > 0.1f) dt = 0.1f; // Cap para evitar teletransportes tras picos de lag (Fuerza Bruta)
-			float translationSpeed = 1.0f * dt; // Muy poco a poco
-			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftShift)) translationSpeed *= 5.0f;
-			
-			vec3 translation(0.0f);
-			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_J)) { translation.x -= translationSpeed; isKeyTranslating = true; } // Left
-			if (ImGui::IsKeyDown(ImGuiKey::ImGuiKey_L)) { translation.x += translationSpeed; isKeyTranslating = true; } // Right
-
-			if (isKeyTranslating) {
-			    // Apply world-space translation
-			    modelMatrix = glm::translate(mat4(1.0f), translation) * modelMatrix;
-			}
-
 			ImGuiIO& io = ImGui::GetIO();
 			ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 			ImGuizmo::Manipulate(&(viewMatrix[0][0]), &(projectionMatrix[0][0]), _currentGizmoOperation, _currentGizmoMode, &(modelMatrix[0][0]), nullptr, nullptr);
@@ -154,21 +138,18 @@ void AlgGeom::GUI::renderGuizmo(Model3D::Component* component, SceneContent* sce
 			model->setModelMatrix(modelMatrix);
 
 			static bool wasUsingGizmo = false;
-			bool isUsing = ImGuizmo::IsUsing() || isKeyTranslating;
+			bool isUsing = ImGuizmo::IsUsing();
 
 			if (isUsing && sceneContent->_isPr4Active) {
-			    // Actualizamos las visualizaciones de las cajas de colisiones dinámicamente en tiempo real
-			    // Omitiendo el recálculo y dibujado pesado de los triángulos rojos (skipTriTest=true)
-			    sceneContent->updatePr4Interactive(true); 
+				sceneContent->update_pr4(true);
 			}
 			if (wasUsingGizmo && !isUsing && sceneContent->_isPr4Active) {
-			    // Al soltar exactamente en el último frame, procesamos la colisión exhaustiva al completo (skipTriTest=false)
-			    sceneContent->updatePr4Interactive(false);
-			    
-			    if (sceneContent->_isBruteForceActive) {
-			        std::cout << "\n--- Ejecutando Comparativa (Paso 7) ---" << std::endl;
-			        sceneContent->runPr4BruteForce();
-			    }
+				sceneContent->update_pr4(false);
+				
+				if (sceneContent->_isBruteForceActive) {
+					std::cout << "\n--- Ejecutando Comparativa (Paso 7) ---" << std::endl;
+					sceneContent->runPr4BruteForce();
+				}
 			}
 			wasUsingGizmo = isUsing;
 		}

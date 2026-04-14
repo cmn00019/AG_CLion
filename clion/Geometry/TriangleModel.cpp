@@ -86,7 +86,7 @@ void TriangleModel::translate(const Vect3d& offset)
 void TriangleModel::applyMatrix(const glm::mat4& matrix)
 {
     if (_originalVertices.empty()) {
-        _originalVertices = _vertices; // Save the original state upon first transform
+        _originalVertices = _vertices;
     }
     for (size_t i = 0; i < _vertices.size(); i++) {
         glm::vec4 p = matrix * glm::vec4(_originalVertices[i].getX(), _originalVertices[i].getY(), _originalVertices[i].getZ(), 1.0f);
@@ -178,10 +178,7 @@ void TriangleModel::loadModelBinaryFile(const std::string& path)
         this->_indices.resize(numIndices);
         fin.read((char*)this->_indices.data(), sizeof(GLuint) * numIndices);
     }
-    
-    // HEAL VTABLE POINTERS (Since the .bin file contains raw memory dumps of objects with virtual functions, 
-    // their vtable pointers are corrupted due to ASLR between different runs).
-    // We reconstruct the objects in place using placement-new.
+
     for (size_t i = 0; i < numVertices; i++) {
         double vx = this->_vertices[i].get(0), vy = this->_vertices[i].get(1), vz = this->_vertices[i].get(2);
         double nx = this->_normals[i].get(0), ny = this->_normals[i].get(1), nz = this->_normals[i].get(2);
@@ -194,8 +191,6 @@ void TriangleModel::loadModelBinaryFile(const std::string& path)
         }
     }
 }
-
-
 
 void TriangleModel::processMesh(aiMesh* mesh, const aiScene* scene, const std::string& folder)
 {

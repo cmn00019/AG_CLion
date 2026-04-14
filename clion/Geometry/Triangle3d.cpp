@@ -148,7 +148,7 @@ bool Triangle3d::tri_tri(Triangle3d& tri)
 	double du2 = n1.dot(u2) + d1;
 	
 	if (std::abs(du0) < 1e-8 && std::abs(du1) < 1e-8 && std::abs(du2) < 1e-8) {
-		return false; // Coplanar ignorado
+		return false; // Coplanar
 	}
 	
 	if (du0 * du1 > 0.0 && du0 * du2 > 0.0) return false;

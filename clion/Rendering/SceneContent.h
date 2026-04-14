@@ -52,7 +52,7 @@ namespace AlgGeom
 		void buildPr2d();
 		void buildPr3a();
 		void buildPr4();
-		void updatePr4Interactive(bool skipTriTest = false);
+		void update_pr4(bool skipTriTest = false);
 		void syncPr4Visuals();
 		void clearPr4Visuals();
 		void runPr4BruteForce();
