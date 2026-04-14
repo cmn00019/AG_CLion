@@ -32,13 +32,51 @@ TriangleModel::~TriangleModel()
 {
 }
 
-/*
+TriangleModel::TriangleModel(std::vector<Triangle3d>& triangles) : _octree(nullptr)
+{
+    // Extraer vértices únicos y generar índices
+    for (size_t i = 0; i < triangles.size(); i++)
+    {
+        Vect3d verts[3] = { triangles[i].getA(), triangles[i].getB(), triangles[i].getC() };
+        Vect3d normal = triangles[i].normal();
+
+        for (int v = 0; v < 3; v++)
+        {
+            // Buscar si el vértice ya existe
+            int foundIdx = -1;
+            for (size_t j = 0; j < _vertices.size(); j++)
+            {
+                if (_vertices[j] == verts[v])
+                {
+                    foundIdx = (int)j;
+                    break;
+                }
+            }
+
+            if (foundIdx >= 0)
+            {
+                _indices.push_back((unsigned)foundIdx);
+            }
+            else
+            {
+                _vertices.push_back(verts[v]);
+                _normals.push_back(normal);
+                _indices.push_back((unsigned)(_vertices.size() - 1));
+            }
+        }
+    }
+
+    // Construir caras
+    for (size_t i = 0; i < triangles.size(); i++)
+    {
+        _faces.push_back(triangles[i]);
+    }
+}
+
 PointCloud3d TriangleModel::getCloud()
 {
     return PointCloud3d(_vertices);
-
 }
- */
 
 Triangle3d TriangleModel::getFace(unsigned index) 
 {

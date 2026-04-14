@@ -1182,3 +1182,123 @@ AlgGeom::Model3D* AlgGeom::SceneContent::getModel(Model3D::Component* component)
 
 	return nullptr;
 }
+
+// ============================== PRACTICA 5 ==============================
+
+void AlgGeom::SceneContent::buildPr5()
+{
+	// Setup flag
+	_isPr5Active = true;
+	_showPr5Slow = false;
+	_showPr5Fast = false;
+	
+    generateCloudPr5();
+}
+
+void AlgGeom::SceneContent::generateCloudPr5()
+{
+    clearScene();
+    
+    _showPr5Slow = false;
+    _showPr5Fast = false;
+    _chSlow.clear();
+    _chFast.clear();
+    _visibleSlow = 0;
+    _visibleFast = 0;
+    _frameCounterPr5 = 0;
+    
+    if (_cloudPr5) delete _cloudPr5;
+    
+    std::cout << "\n============================================" << std::endl;
+    std::cout << "PRACTICA 5: Gift Wrapping 3D - Nube generada" << std::endl;
+
+    const int NUM_PUNTOS = 100;
+    _cloudPr5 = new PointCloud3d(NUM_PUNTOS, 5.0f);
+
+    std::cout << "Nube de puntos creada con " << _cloudPr5->size() << " puntos." << std::endl;
+
+    // Dibujar solo la nube de puntos al principio
+    this->addNewModel((new DrawPointCloud3d(*_cloudPr5))->setPointColor(vec3(0.2f, 0.6f, 1.0f))->overrideModelName()->setPointSize(5.0f));
+    
+    // Generamos las envolventes a escondidas para no parar el Render:
+    _chSlow = _cloudPr5->CH_GiftWrapping();
+    _chFast = _cloudPr5->CH_GiftWrapping_Fast();
+    
+    std::cout << "============================================" << std::endl;
+}
+
+void AlgGeom::SceneContent::runComparativePr5()
+{
+	if (!_cloudPr5) {
+	    std::cout << "Genere primero una nube de puntos PR5." << std::endl;
+	    return;
+	}
+	
+    std::cout << "\n============================================" << std::endl;
+    std::cout << "COMPARATIVA DE RENDIMIENTO PR5" << std::endl;
+    std::cout << "============================================" << std::endl;
+    
+    auto startSlow = std::chrono::high_resolution_clock::now();
+    std::vector<Triangle3d> chSlow = _cloudPr5->CH_GiftWrapping();
+    auto endSlow = std::chrono::high_resolution_clock::now();
+    double tiempoSlow = std::chrono::duration<double, std::milli>(endSlow - startSlow).count();
+    
+    auto startFast = std::chrono::high_resolution_clock::now();
+    std::vector<Triangle3d> chFast = _cloudPr5->CH_GiftWrapping_Fast();
+    auto endFast = std::chrono::high_resolution_clock::now();
+    double tiempoFast = std::chrono::duration<double, std::milli>(endFast - startFast).count();
+
+    std::cout << "| Metodo       | N puntos | N triangulos | Tiempo (ms) |" << std::endl;
+    std::cout << "|--------------|----------|--------------|-------------|" << std::endl;
+    std::cout << "| O(n^2)       | " << _cloudPr5->size() << "      | " << chSlow.size() << "           | " << tiempoSlow << " |" << std::endl;
+    std::cout << "| O(n) [Fast]  | " << _cloudPr5->size() << "      | " << chFast.size() << "           | " << tiempoFast << " |" << std::endl;
+    std::cout << "============================================" << std::endl;
+
+    if (tiempoSlow > 0.0)
+    {
+        std::cout << "Speedup (Fast vs Slow): " << (tiempoSlow / tiempoFast) << "x" << std::endl;
+    }
+}
+
+void AlgGeom::SceneContent::update_pr5()
+{
+	if (!_isPr5Active || !_cloudPr5) return;
+	
+	static auto lastUpdate = std::chrono::steady_clock::now();
+	auto currentTime = std::chrono::steady_clock::now();
+	bool shouldDraw = false;
+	
+	if (std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastUpdate).count() >= 1000) {
+	    shouldDraw = true;
+	    lastUpdate = currentTime;
+	}
+	
+	// Mostrar O(n^2) triangulo a triangulo
+	if (_showPr5Slow) {
+	    // Si ha pasado 1 segundo (1000ms), mostramos uno nuevo
+	    if (shouldDraw && _visibleSlow < (int)_chSlow.size()) {
+	        this->addNewModel((new DrawTriangle3d(_chSlow[_visibleSlow]))->setTriangleColor(vec4(1.0f, 0.0f, 0.0f, 0.6f))->overrideModelName());
+	        _visibleSlow++;
+	    }
+	} else if (_visibleSlow > 0) {
+	    std::cout << "Para ver la creacion, desmarcar y volver a generar la nube!" << std::endl;
+	    // Si el usuario lo desactiva, limpiamos todo y redibujamos la nube:
+	    clearScene();
+	    this->addNewModel((new DrawPointCloud3d(*_cloudPr5))->setPointColor(vec3(0.2f, 0.6f, 1.0f))->overrideModelName()->setPointSize(5.0f));
+	    _visibleSlow = 0;
+	    _visibleFast = 0;
+	}
+	
+	// Mostrar O(n) triangulo a triangulo
+	if (_showPr5Fast) {
+	    if (shouldDraw && _visibleFast < (int)_chFast.size()) {
+	        this->addNewModel((new DrawTriangle3d(_chFast[_visibleFast]))->setTriangleColor(vec4(0.0f, 1.0f, 0.0f, 0.6f))->overrideModelName());
+	        _visibleFast++;
+	    }
+	} else if (!_showPr5Slow && _visibleFast > 0) {
+		clearScene();
+	    this->addNewModel((new DrawPointCloud3d(*_cloudPr5))->setPointColor(vec3(0.2f, 0.6f, 1.0f))->overrideModelName()->setPointSize(5.0f));
+	    _visibleSlow = 0;
+	    _visibleFast = 0;
+	}
+}

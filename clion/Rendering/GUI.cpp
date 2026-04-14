@@ -171,6 +171,11 @@ void AlgGeom::GUI::initialize(GLFWwindow* window, const int openGLMinorVersion)
 
 void AlgGeom::GUI::render(SceneContent* sceneContent)
 {
+	// Actualizar animación de RP5 (Gift Wrapping)
+	if (sceneContent) {
+		sceneContent->update_pr5();
+	}
+
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
@@ -427,6 +432,26 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 				showOctreeBlack = true;
 				showMesh = true;
 			}
+		}
+
+		GuiUtilities::leaveSpace(1);
+		
+		ImGui::Text("Practica 5");
+		ImGui::Separator();
+		if (ImGui::Button("PR5: Generar Nube"))
+		{
+			sceneContent->buildPr5();
+			_modelCompSelected = nullptr;
+		}
+		if (sceneContent->_isPr5Active && sceneContent->_cloudPr5 != nullptr)
+		{
+		    ImGui::Checkbox("O(n^2) Lento (Rojo)", &sceneContent->_showPr5Slow);
+		    ImGui::Checkbox("O(n) Rápido (Verde)", &sceneContent->_showPr5Fast);
+		    
+		    if (ImGui::Button("Mostrar Comparativa PR5"))
+		    {
+		        sceneContent->runComparativePr5();
+		    }
 		}
 
 		GuiUtilities::leaveSpace(1);

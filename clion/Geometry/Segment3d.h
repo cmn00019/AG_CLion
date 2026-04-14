@@ -51,6 +51,11 @@ public:
 	*/
 	virtual ~Segment3d();
 	
+	/**
+	*	@brief Compara si dos segmentos son iguales independientemente del orden de los vértices (AB == BA).
+	*/
+	bool compare(const Segment3d& s) const;
+
         /**
 	*	@brief Obtains de minimum segment-point distance
 	*/

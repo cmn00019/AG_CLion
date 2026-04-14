@@ -8,6 +8,9 @@
 
 class TriangleModel;
 class Octree;
+class PointCloud3d;
+#include "Triangle3d.h"
+#include "PointCloud3d.h"
 
 namespace AlgGeom
 {
@@ -24,6 +27,17 @@ namespace AlgGeom
 		bool									_showRedTriangles = true;
 		bool									_isBruteForceActive = false;
 		
+		// PR5 variables
+		bool _isPr5Active = false;
+		bool _showPr5Slow = false;
+		bool _showPr5Fast = false;
+		std::vector<Triangle3d> _chSlow;
+		std::vector<Triangle3d> _chFast;
+		int _visibleSlow = 0;
+		int _visibleFast = 0;
+		int _frameCounterPr5 = 0;
+		PointCloud3d* _cloudPr5 = nullptr;
+
 		::TriangleModel*						_tmA = nullptr;
 		::TriangleModel*						_tmB = nullptr;
 		::Octree*								_octA = nullptr;
@@ -52,6 +66,10 @@ namespace AlgGeom
 		void buildPr2d();
 		void buildPr3a();
 		void buildPr4();
+		void buildPr5();
+		void generateCloudPr5();
+		void runComparativePr5();
+		void update_pr5();
 		void update_pr4(bool skipTriTest = false);
 		void syncPr4Visuals();
 		void clearPr4Visuals();

@@ -27,9 +27,14 @@
 
 
 #include <string>
+#include <vector>
 #include "AABB.h"
 //#include "TriangleMesh.h"
 #include "Vect3d.h"
+
+class Triangle3d;
+class Segment3d;
+class TriangleModel;
 
 /**
 *	@brief This class represents a set of points distributed in the space.
@@ -144,6 +149,21 @@ public:
 	*	@brief Returns the number of points that this cloud contains.
 	*/
 	size_t size() { return _points.size(); }
+
+	/**
+	*	@brief Calcula la envolvente convexa 3D mediante Gift Wrapping en O(n²) por iteración.
+	*/
+	std::vector<Triangle3d> CH_GiftWrapping();
+
+	/**
+	*	@brief Calcula la envolvente convexa 3D mediante Gift Wrapping optimizado con ángulos en O(n) por iteración.
+	*/
+	std::vector<Triangle3d> CH_GiftWrapping_Fast();
+
+	/**
+	*	@brief Calcula la envolvente convexa y devuelve un TriangleModel.
+	*/
+	TriangleModel* CH_GiftWrapping_Model();
 };
 
 

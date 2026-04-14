@@ -16,6 +16,14 @@ Segment3d::~Segment3d()
 {
 }
 
+bool Segment3d::compare(const Segment3d& s) const
+{
+	// AB == AB o AB == BA
+	Vect3d o1 = _orig, d1 = _dest;
+	Vect3d o2 = s._orig, d2 = s._dest;
+	return (o1 == o2 && d1 == d2) || (o1 == d2 && d1 == o2);
+}
+
 Segment3d & Segment3d::operator=(const Segment3d & segment)
 {
 	if (this != &segment)

@@ -52,6 +52,7 @@ protected:
     
 public:
     TriangleModel(const std::string& pathfile);
+    TriangleModel(std::vector<Triangle3d>& triangles);
     TriangleModel(const TriangleModel& orig) = delete;
     virtual ~TriangleModel();
 
