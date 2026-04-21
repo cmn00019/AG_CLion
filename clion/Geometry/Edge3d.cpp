@@ -6,7 +6,7 @@ Edge3d::Edge3d()
 {
 }
 
-Edge3d::Edge3d(Vect3d & orig, Vect3d & dest)
+Edge3d::Edge3d(const Vect3d & orig, const Vect3d & dest)
 	: _orig(orig), _dest(dest)
 {
 }
@@ -21,17 +21,17 @@ Edge3d::~Edge3d()
 {
 }
 
-Vect3d Edge3d::getDestination()
+Vect3d Edge3d::getDestination() const
 {
 	return _dest;
 }
 
-Vect3d Edge3d::getOrigin()
+Vect3d Edge3d::getOrigin() const
 {
 	return _orig;
 }
 
-Vect3d Edge3d::getPoint(double t)
+Vect3d Edge3d::getPoint(double t) const
 {
 	if (!isTvalid(t)) return Vect3d();
         Vect3d aux1 = _dest.sub(_orig);

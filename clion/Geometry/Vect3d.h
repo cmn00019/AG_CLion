@@ -60,27 +60,27 @@ public:
 	/**
 	*	@brief Vector sum. a + b.
 	*/
-	Vect3d add(Vect3d& b);
+	Vect3d add(const Vect3d& b) const;
 
 	/**
 	*	@brief Checks if a, b and this vector are on a same line.
 	*/
-	bool collinear(Vect3d& a, Vect3d& b);
+	bool collinear(const Vect3d& a, const Vect3d& b) const;
 
 	/**
 	*	@brief Distance between points.
 	*/
-	double distance(Vect3d& p);
+	double distance(const Vect3d& p) const;
 
 	/**
 	*	@brief Dot product.
 	*/
-	double dot(Vect3d& v);
+	double dot(const Vect3d& v) const;
 
 	/**
 	*	@brief Returns the coordinates of this vector as an array.
 	*/
-	std::vector<double> getVert();
+	std::vector<double> getVert() const;
 
 	/**
 	*	@brief Returns the equidistant plane between this point and v.
@@ -88,32 +88,32 @@ public:
 	*	@param n Output normal vector.
 	*	@param d Output independent term.
 	*/
-	void getPlane(Vect3d& v, Vect3d& n, float& d);
+	void getPlane(const Vect3d& v, Vect3d& n, float& d) const;
 
 	/**
 	*	@brief Returns a certain coordinate of the vector.
 	*/
-	double get(unsigned int index) { return _value[index]; }
+	double get(unsigned int index) const { return _value[index]; }
 
 	/**
 	*	@brief Returns the X coordinate.
 	*/
-	double getX();
+	double getX() const;
 
 	/**
 	*	@brief Returns the Y coordinate.
 	*/
-	double getY();
+	double getY() const;
 
 	/**
 	*	@brief Returns the Z coordinate.
 	*/
-	double getZ();
+	double getZ() const;
 
 	/**
 	*	@brief Returns the module of the vector.
 	*/
-	double module();
+	double module() const;
 
 	/**
 	*	@brief Assignment operator.
@@ -123,12 +123,12 @@ public:
 	/**
 	*	@brief Checks if two vectors are equal.
 	*/
-	virtual bool operator==(const Vect3d& vector);
+	virtual bool operator==(const Vect3d& vector) const;
 
 	/**
 	*	@brief Checks if two vectors are distinct.
 	*/
-	virtual bool operator!=(const Vect3d& vector);
+	virtual bool operator!=(const Vect3d& vector) const;
 
 	/**
 	*	@brief Shows some information of the vector as debugging info.
@@ -138,7 +138,7 @@ public:
 	/**
 	*	@brief Multiplication of this vector by an scalar value.
 	*/
-	Vect3d scalarMul(double value);
+	Vect3d scalarMul(double value) const;
 
 	/**
 	*	@brief Modifies the value of a certain coordinate.
@@ -168,11 +168,11 @@ public:
 	/**
 	*	@brief Vector subtraction.
 	*/
-	Vect3d sub(Vect3d& b);
+	Vect3d sub(const Vect3d& b) const;
 
 	/**
 	*	@brief Vectorial product.
 	*/
-	Vect3d xProduct(Vect3d& b);
+	Vect3d xProduct(const Vect3d& b) const;
 };
 

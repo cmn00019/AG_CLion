@@ -41,12 +41,12 @@ AABB AABB::dot(const mat4& matrix)
 	return newAABB;
 }
 
-bool AABB::AABB_tri(Triangle3d& t)
+bool AABB::AABB_tri(const Triangle3d& t) const
 {
 	return t.tri_AABB(*this);
 }
 
-bool AABB::box_box(AABB& b)
+bool AABB::box_box(const AABB& b) const
 {
 	if (_max.x < b.min().x || _min.x > b.max().x) return false;
 	if (_max.y < b.min().y || _min.y > b.max().y) return false;
@@ -80,7 +80,7 @@ std::ostream& operator<<(std::ostream& os, const AABB& aabb)
 	return os;
 }
 
-bool AABB::rayIntersects(Ray3d& ray)
+bool AABB::rayIntersects(const Ray3d& ray) const
 {
     vec3 origin(ray.getOrigin().getX(), ray.getOrigin().getY(), ray.getOrigin().getZ());
     vec3 dest(ray.getDestination().getX(), ray.getDestination().getY(), ray.getDestination().getZ());

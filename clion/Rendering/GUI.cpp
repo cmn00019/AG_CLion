@@ -434,25 +434,65 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			}
 		}
 
-		GuiUtilities::leaveSpace(1);
-		
-		ImGui::Text("Practica 5");
-		ImGui::Separator();
-		if (ImGui::Button("PR5: Generar Nube"))
+		ImGui::SameLine();
+		if (ImGui::Button("Nube PR5"))
 		{
-			sceneContent->buildPr5();
+			sceneContent->generateCloudPr5();
 			_modelCompSelected = nullptr;
 		}
-		if (sceneContent->_isPr5Active && sceneContent->_cloudPr5 != nullptr)
+
+		ImGui::SameLine();
+		if (ImGui::Button("Modelo PR5"))
 		{
-		    ImGui::Checkbox("O(n^2) Lento (Rojo)", &sceneContent->_showPr5Slow);
-		    ImGui::Checkbox("O(n) Rápido (Verde)", &sceneContent->_showPr5Fast);
-		    
-		    if (ImGui::Button("Mostrar Comparativa PR5"))
-		    {
-		        sceneContent->runComparativePr5();
-		    }
+			if (sceneContent->_drawA_ref == nullptr)
+			{
+				std::cout << "Cargue un modelo (Open Model) antes de extraer la nube." << std::endl;
+			}
+			else
+			{
+				sceneContent->extractCloudFromModel();
+				_modelCompSelected = nullptr;
+			}
 		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Limpiar PR5"))
+		{
+			sceneContent->clearPr5Scene();
+			_modelCompSelected = nullptr;
+		}
+
+        // Panel de ejecución y filtros si la PR5 está preparada
+        if (sceneContent->_isPr5Active) {
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(1, 1, 0, 1), "EJECUCION PR5:");
+            
+            if (ImGui::Button("Ejecutar Lento (O(n2))")) {
+                sceneContent->runCH_Lento();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Ejecutar Optimo (O(n))")) {
+                sceneContent->runCH_Opt();
+            }
+
+            ImGui::Spacing();
+            ImGui::Text("Filtros Pr5:");
+            ImGui::Checkbox("Wireframe", &sceneContent->_pr5Wireframe);
+            ImGui::SameLine();
+            ImGui::PushItemWidth(120);
+            if (ImGui::InputInt("Puntos Nube", &sceneContent->_numPointsPr5)) {
+                if (sceneContent->_numPointsPr5 < 4) sceneContent->_numPointsPr5 = 4;
+                // Si ya hay una nube aleatoria, la regeneramos al cambiar el numero
+                if (sceneContent->_cloudPr5) {
+                    sceneContent->generateCloudPr5();
+                }
+            }
+            ImGui::SameLine();
+            ImGui::SliderInt("Velocidad (ms)", &sceneContent->_pr5SpeedMs, 50, 2000);
+            ImGui::PopItemWidth();
+            ImGui::Separator();
+        }
+
 
 		GuiUtilities::leaveSpace(1);
 
@@ -526,7 +566,7 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 					isSelectedValid = true;
 				}
 
-				const std::string compName = sceneContent->_model[modelIdx]->getName() + ", " + "Comp. " + std::to_string(compIdx);
+				const std::string compName = sceneContent->_model[modelIdx]->getName() + ", Comp. " + std::to_string(compIdx) + "##" + std::to_string(modelIdx) + "_" + std::to_string(compIdx);
 				if (ImGui::Selectable(compName.c_str(), _modelCompSelected == sceneContent->_model[modelIdx]->_components[compIdx].get()))
 				{
 					_modelCompSelected = sceneContent->_model[modelIdx]->_components[compIdx].get();

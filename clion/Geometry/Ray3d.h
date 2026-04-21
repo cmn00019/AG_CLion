@@ -37,13 +37,13 @@ protected:
 	/**
 	*	@brief Checks if the parametric value t is valid. It is only invalid if t is smaller than 0.
 	*/
-	virtual bool isTvalid(double t) { return (t >= 0); }
+	virtual bool isTvalid(double t) const { return (t >= 0); }
 
 public:
 	/**
 	*	@brief Constructor.
 	*/
-	Ray3d(Vect3d& orig, Vect3d& dest);
+	Ray3d(const Vect3d& orig, const Vect3d& dest);
 
 	/**
 	*	@brief Copy constructor.
@@ -59,7 +59,7 @@ public:
 	*	@brief Obtains de minimum ray-point distance
 	*/
 	
-	double distance(Vect3d& v);
+	double distance(const Vect3d& v) const;
 
 	/**
 	*	@brief Assignment operator.

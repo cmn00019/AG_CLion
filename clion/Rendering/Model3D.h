@@ -103,6 +103,7 @@ namespace AlgGeom
 		AABB getAABB() { return _aabb.dot(_modelMatrix); }
 		mat4 getModelMatrix() const { return _modelMatrix; }
 		std::string getName() { return _name; }
+		Model3D* setName(const std::string& name) { _name = name; return this; }
 		Model3D* moveGeometryToOrigin(const mat4& origMatrix = mat4(1.0f), float maxScale = FLT_MAX);
 		Model3D* overrideModelName();
 		Model3D* setModelMatrix(const mat4& modelMatrix) { _modelMatrix = modelMatrix; return this; }

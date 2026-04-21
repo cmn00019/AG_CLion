@@ -24,9 +24,9 @@ public:
 	void update(const AABB& aabb);
 	void update(const vec3& point);
 
-	bool AABB_tri(Triangle3d& t);
-	bool rayIntersects(Ray3d& ray);
-	bool box_box(AABB& b);
+	bool AABB_tri(const Triangle3d& t) const;
+	bool rayIntersects(const Ray3d& ray) const;
+	bool box_box(const AABB& b) const;
 
 
 	friend std::ostream& operator<<(std::ostream& os, const AABB& aabb);

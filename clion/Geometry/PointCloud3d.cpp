@@ -3,7 +3,17 @@
 #include "PointCloud3d.h"
 #include "Triangle3d.h"
 #include "Segment3d.h"
-
+#include "TriangleModel.h"
+#include <list>
+#include <set>
+#include <map>
+#include <unordered_set>
+#include <unordered_map>
+#include <queue>
+#include <cmath>
+#include <iostream>
+#include <chrono>
+#include <random>
 
 PointCloud3d::PointCloud3d(): _maxPoint(INFINITY, -INFINITY, -INFINITY), _minPoint(INFINITY, INFINITY, INFINITY) 
 {
@@ -19,867 +29,346 @@ PointCloud3d::PointCloud3d(const std::string & filename): _maxPoint(-INFINITY, -
 	{
 		std::stringstream ss(string);
 		std::vector<std::string> result;
-
-		while (ss.good())
-		{
-			std::string substr;
-			getline(ss, substr, ',');
-			result.push_back(substr);
-		}
-
+		while (ss.good()) { std::string substr; getline(ss, substr, ','); result.push_back(substr); }
 		return result;
 	};
-
-	std::string currentLine; 				// Línea actual del fichero.
-	std::ifstream inputStream;				// Flujo de entrada.
-	inputStream.open(filename.c_str());
-
-	while (std::getline(inputStream, currentLine))
-	{
+	std::string currentLine;
+	std::ifstream inputStream(filename.c_str());
+	while (std::getline(inputStream, currentLine)) {
 		std::vector<std::string> coord = splitByComma(currentLine);
-
-		if (coord.size() == 3)	
-		{
-			try {
-				Vect3d point(std::stof(coord[0].c_str(), nullptr), std::stof(coord[1].c_str(), nullptr), (std::stof(coord[2].c_str(), nullptr)));
-				this->addPoint(point);
-			}
-			catch (const std::exception& excep)
-			{
-				inputStream.close();
-
-				throw excep;
-			}
+		if (coord.size() == 3) {
+			try { Vect3d point(std::stof(coord[0]), std::stof(coord[1]), std::stof(coord[2])); this->addPoint(point); }
+			catch (...) {}
 		}
 	}
-	inputStream.close();					// Cerramos fichero.
+	inputStream.close();
 }
 
 PointCloud3d::PointCloud3d(int size, float max_x, float max_y, float max_z): _maxPoint(-INFINITY, -INFINITY, -INFINITY), _minPoint(INFINITY, INFINITY, INFINITY)
 {
-	_points = std::vector<Vect3d>();
-
-	while (size > 0)
-	{
-		float x = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max_x * 2.0f))) - max_x;
-		float y = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max_y * 2.0f))) - max_y;
-		float z = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (max_z * 2.0f))) - max_z;
-                Vect3d val (x,y,z);
-		this->addPoint(val);
-
-		--size;
+	while (size-- > 0) {
+		float x = static_cast<float>(rand()) / (RAND_MAX / (max_x * 2.0f)) - max_x;
+		float y = static_cast<float>(rand()) / (RAND_MAX / (max_y * 2.0f)) - max_y;
+		float z = static_cast<float>(rand()) / (RAND_MAX / (max_z * 2.0f)) - max_z;
+		Vect3d val(x, y, z); this->addPoint(val);
 	}
 }
-
-#include <random>
 
 PointCloud3d::PointCloud3d(int size, float radius): _maxPoint(-INFINITY, -INFINITY, -INFINITY), _minPoint(INFINITY, INFINITY, INFINITY)
 {
-	_points = std::vector<Vect3d>();
-
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<double> distTheta(0.0, 2.0 * glm::pi<double>());
+	std::random_device rd; std::mt19937 gen(rd());
+	std::uniform_real_distribution<double> distTheta(0.0, 2.0 * 3.14159265358979323846);
 	std::uniform_real_distribution<double> distPhi(-1.0, 1.0);
 	std::uniform_real_distribution<double> distR(0.0, 1.0);
-
-	while (size > 0)
-	{
-		double theta = distTheta(gen);
-		double cosPhi = distPhi(gen); // Para distribución uniforme en la esfera
-		double sinPhi = std::sqrt(1.0 - cosPhi * cosPhi);
-
-		double x = sinPhi * std::cos(theta);
-		double y = sinPhi * std::sin(theta);
-		double z = cosPhi;
-
-		double r = radius * std::cbrt(distR(gen)); // Distribución uniforme en volumen
-
-		Vect3d point(r * x, r * y, r * z);
-		this->addPoint(point);
-
-		--size;
+	while (size-- > 0) {
+		double theta = distTheta(gen), cosPhi = distPhi(gen), sinPhi = std::sqrt(1.0 - cosPhi * cosPhi);
+		double x = sinPhi * std::cos(theta), y = sinPhi * std::sin(theta), z = cosPhi;
+		double r = radius * std::cbrt(distR(gen));
+		Vect3d point(r * x, r * y, r * z); this->addPoint(point);
 	}
 }
 
-PointCloud3d::PointCloud3d(const PointCloud3d & pointCloud)
-	: _points(pointCloud._points), _maxPoint(pointCloud._maxPoint), _minPoint(pointCloud._minPoint)
-{
-}
+PointCloud3d::PointCloud3d(const PointCloud3d & pointCloud) : _points(pointCloud._points), _maxPoint(pointCloud._maxPoint), _minPoint(pointCloud._minPoint) {}
+PointCloud3d::~PointCloud3d() {}
 
-PointCloud3d::~PointCloud3d()
-{
+void PointCloud3d::addPoint(Vect3d & p) { _points.push_back(p); this->updateMaxMin((int)_points.size() - 1); }
+AABB PointCloud3d::getAABB() { return AABB(vec3(_minPoint.getX(), _minPoint.getY(), _minPoint.getZ()), vec3(_maxPoint.getX(), _maxPoint.getY(), _maxPoint.getZ())); }
+Vect3d PointCloud3d::getPoint(int pos) { if (pos >= 0 && pos < (int)_points.size()) return _points[pos]; return Vect3d(); }
 
-}
-
-void PointCloud3d::addPoint(Vect3d & p)
-{
-	_points.push_back(p);
-	this->updateMaxMin(_points.size() - 1);
-}
-
-AABB PointCloud3d::getAABB()
-{
-	return AABB(vec3(_minPoint.getX(), _minPoint.getY(), _minPoint.getZ()), vec3(_maxPoint.getX(), _maxPoint.getY(), _maxPoint.getZ()));
-}
-
-Vect3d PointCloud3d::getPoint(int pos)
-{
-	if ((pos >= 0) && (pos < _points.size())) {
-		return _points[pos];
-	}
-	return Vect3d();
-}
-
-PointCloud3d& PointCloud3d::operator=(const PointCloud3d & pointCloud)
-{
-	if (this != &pointCloud)
-	{
-		_points = pointCloud._points;
-		_maxPoint = pointCloud._maxPoint;
-		_minPoint = pointCloud._minPoint;
-	}
-
+PointCloud3d& PointCloud3d::operator=(const PointCloud3d & pointCloud) {
+	if (this != &pointCloud) { _points = pointCloud._points; _maxPoint = pointCloud._maxPoint; _minPoint = pointCloud._minPoint; }
 	return *this;
 }
 
-void PointCloud3d::save(const std::string & filename)
-{
+void PointCloud3d::save(const std::string & filename) {
 	std::ofstream file(filename);
-
-	for (int i = 0; i < _points.size(); ++i)
-	{
-		file << _points[i].getX() << ", " << _points[i].getY() << ", " << _points[i].getZ() << std::endl;
-	}
-
+	for (auto& p : _points) file << p.getX() << ", " << p.getY() << ", " << p.getZ() << std::endl;
 	file.close();
 }
 
-
-/// PROTECTED METHODS
-
-void PointCloud3d::updateMaxMin(int index)
-{
+void PointCloud3d::updateMaxMin(int index) {
 	Vect3d point = _points[index];
-
 	if (point.getX() < _minPoint.getX()) { _minPoint.setX(point.getX()); _minPointIndex.setX(index); }
 	if (point.getY() < _minPoint.getY()) { _minPoint.setY(point.getY()); _minPointIndex.setY(index); }
 	if (point.getZ() < _minPoint.getZ()) { _minPoint.setZ(point.getZ()); _minPointIndex.setZ(index); }
-
 	if (point.getX() > _maxPoint.getX()) { _maxPoint.setX(point.getX()); _maxPointIndex.setX(index); }
 	if (point.getY() > _maxPoint.getY()) { _maxPoint.setY(point.getY()); _maxPointIndex.setY(index); }
 	if (point.getZ() > _maxPoint.getZ()) { _maxPoint.setZ(point.getZ()); _maxPointIndex.setZ(index); }
 }
 
-void PointCloud3d::getMostDistanced (int &a, int &b)
-{
-    a = 0; b = 0;
-    double maxDist = -1.0;
-
-    for (int i = 0; i < (int)_points.size(); ++i)
-    {
-        for (int j = i + 1; j < (int)_points.size(); ++j)
-        {
+void PointCloud3d::getMostDistanced(int &a, int &b) {
+    a = 0; b = 0; double maxDist = -1.0;
+    for (int i = 0; i < (int)_points.size(); ++i) {
+        for (int j = i + 1; j < (int)_points.size(); ++j) {
             double dist = _points[i].distance(_points[j]);
-            if (dist > maxDist)
-            {
-                maxDist = dist;
-                a = i;
-                b = j;
-            }
+            if (dist > maxDist) { maxDist = dist; a = i; b = j; }
         }
     }
 }
 
-// ========================================================================================
-// PRACTICA 5: Gift Wrapping 3D — Envolvente Convexa
-// ========================================================================================
+static bool puntoEnConjunto(const std::vector<Vect3d>& conjunto, Vect3d& punto) {
+    for (const auto& p : conjunto) if (p == punto) return true;
+    return false;
+}
 
-#include "TriangleModel.h"
-#include <list>
-#include <set>
-#include <cmath>
-#include <algorithm>
-
-// -------------------------------------------------------
-// Función auxiliar: comprobar si un punto ya está en un vector de puntos
-// -------------------------------------------------------
-static bool puntoEnConjunto(const std::vector<Vect3d>& conjunto, Vect3d& punto)
-{
-    for (size_t i = 0; i < conjunto.size(); i++)
-    {
-        Vect3d p = conjunto[i];
-        if (p == punto) return true;
+static bool buscarYEliminar(std::list<Segment3d>& frontera, Segment3d& seg) {
+    for (auto it = frontera.begin(); it != frontera.end(); ++it) {
+        if (it->compare(seg)) { frontera.erase(it); return true; }
     }
     return false;
 }
 
-// -------------------------------------------------------
-// Función auxiliar: buscar y eliminar un segmento de la lista frontera
-// Devuelve true si lo encontró y eliminó
-// -------------------------------------------------------
-static bool buscarYEliminar(std::list<Segment3d>& frontera, Segment3d& seg)
-{
-    for (auto it = frontera.begin(); it != frontera.end(); ++it)
-    {
-        if (it->compare(seg))
-        {
-            frontera.erase(it);
-            return true;
-        }
-    }
+static bool existeEnFrontera(const std::list<Segment3d>& frontera, Segment3d& seg) {
+    for (const auto& s : frontera) if (const_cast<Segment3d&>(s).compare(seg)) return true;
     return false;
 }
 
-// -------------------------------------------------------
-// Función auxiliar: comprobar si un segmento existe en la lista frontera
-// -------------------------------------------------------
-static bool existeEnFrontera(const std::list<Segment3d>& frontera, Segment3d& seg)
-{
-    for (auto it = frontera.begin(); it != frontera.end(); ++it)
-    {
-        Segment3d s = *it;
-        if (s.compare(seg))
-            return true;
-    }
-    return false;
-}
-
-// -------------------------------------------------------
-// Función auxiliar: orientar el triángulo para que su normal apunte hacia afuera
-// (contraria al centro geométrico de la nube)
-// -------------------------------------------------------
-static Triangle3d orientarNormalHaciaAfuera(Vect3d& a, Vect3d& b, Vect3d& c, Vect3d& centroide)
-{
+static Triangle3d orientarNormalHaciaAfuera(Vect3d& a, Vect3d& b, Vect3d& c, Vect3d& centroide) {
     Triangle3d tri(a, b, c);
-    Vect3d normal = tri.normal();
-
-    // Vector desde el centroide hacia un vértice del triángulo
-    Vect3d centroAvertice = a.sub(centroide);
-
-    // Si el producto escalar es negativo, la normal apunta hacia dentro: invertir winding
-    if (normal.dot(centroAvertice) < 0.0)
-    {
-        // Intercambiar b y c para invertir la normal
-        Triangle3d triInv(a, c, b);
-        return triInv;
-    }
+    if (tri.normal().dot(a.sub(centroide)) < 0.0) return Triangle3d(a, c, b);
     return tri;
 }
 
-// -------------------------------------------------------
-// Función auxiliar: comprobar si un triángulo ya existe en el resultado
-// -------------------------------------------------------
-static bool trianguloYaExiste(const std::vector<Triangle3d>& CH, Vect3d& a, Vect3d& b, Vect3d& c)
-{
-    for (size_t i = 0; i < CH.size(); i++)
-    {
-        Triangle3d t = CH[i];
-        Vect3d ta = t.getA(), tb = t.getB(), tc = t.getC();
-        // Comprobar todas las permutaciones cíclicas y sus inversas
-        if ((ta == a && tb == b && tc == c) ||
-            (ta == b && tb == c && tc == a) ||
-            (ta == c && tb == a && tc == b) ||
-            (ta == a && tb == c && tc == b) ||
-            (ta == c && tb == b && tc == a) ||
-            (ta == b && tb == a && tc == c))
-        {
-            return true;
-        }
-    }
-    return false;
+static bool trianguloYaExiste(const std::set<std::tuple<double, double, double, double, double, double, double, double, double>>& CH_cache, Vect3d& a, Vect3d& b, Vect3d& c) {
+    auto sortAndTuple = [](Vect3d p1, Vect3d p2, Vect3d p3) {
+        if (p2.getX() < p1.getX() || (p2.getX() == p1.getX() && p2.getY() < p1.getY())) std::swap(p1, p2);
+        if (p3.getX() < p2.getX() || (p3.getX() == p2.getX() && p3.getY() < p2.getY())) std::swap(p2, p3);
+        if (p2.getX() < p1.getX() || (p2.getX() == p1.getX() && p2.getY() < p1.getY())) std::swap(p1, p2);
+        return std::make_tuple(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), p3.getX(), p3.getY(), p3.getZ());
+    };
+    return CH_cache.count(sortAndTuple(a, b, c)) > 0;
 }
 
-
-// ========================================================================================
-// CH_GiftWrapping() — Versión O(n²) por iteración
-// ========================================================================================
-std::vector<Triangle3d> PointCloud3d::CH_GiftWrapping()
-{
-    std::vector<Triangle3d> CH;     // Resultado: triángulos de la envolvente
-    int n = (int)_points.size();
-
-    if (n < 4)
-    {
-        std::cout << "Se necesitan al menos 4 puntos para calcular la envolvente convexa 3D." << std::endl;
-        return CH;
-    }
-
-    // --- Calcular centroide de la nube para orientar normales ---
-    Vect3d centroide(0, 0, 0);
-    for (int i = 0; i < n; i++)
-    {
-        Vect3d tmp = centroide.add(_points[i]);
-        centroide = tmp;
-    }
-    centroide = centroide.scalarMul(1.0 / n);
-
-    // --- PASO 1: Encontrar el punto A (menor coordenada Y) ---
+TriangleModel* PointCloud3d::CH_GiftWrapping() {
+    std::vector<Triangle3d> CH; int n = (int)_points.size(); if (n < 4) return nullptr;
+    Vect3d centroide(0, 0, 0); for (auto& p : _points) centroide = centroide.add(p); centroide = centroide.scalarMul(1.0 / n);
     int idxA = 0;
-    for (int i = 1; i < n; i++)
-    {
-        if (_points[i].getY() < _points[idxA].getY())
-            idxA = i;
-        else if (_points[i].getY() == _points[idxA].getY() && _points[i].getX() < _points[idxA].getX())
-            idxA = i;
-    }
+    for (int i = 1; i < n; i++) if (_points[i].getY() < _points[idxA].getY() || (_points[i].getY() == _points[idxA].getY() && _points[i].getX() < _points[idxA].getX())) idxA = i;
     Vect3d A = _points[idxA];
-
-    // --- PASO 2: Encontrar el punto B (Jarvis 2D, proyección XZ) ---
-    // Se busca el punto que forme el menor ángulo polar desde A en la proyección 2D (X, Z)
-    int idxB = -1;
-    double minAngle = 1e18;
-    for (int i = 0; i < n; i++)
-    {
+    int idxB = -1; double minAngle = 1e18;
+    for (int i = 0; i < n; i++) {
         if (i == idxA) continue;
-        double dx = _points[i].getX() - A.getX();
-        double dy = _points[i].getY() - A.getY();
-        double angle = std::atan2(dy, dx);
-        if (angle < minAngle || (angle == minAngle && _points[i].distance(A) > _points[idxB].distance(A)))
-        {
-            minAngle = angle;
-            idxB = i;
-        }
+        double dx = _points[i].getX() - A.getX(), dy = _points[i].getY() - A.getY(), angle = std::atan2(dy, dx);
+        if (angle < minAngle) { minAngle = angle; idxB = i; }
     }
     Vect3d B = _points[idxB];
-
-    // --- PASO 3: Encontrar el punto C (triángulo primigenio) en O(n²) ---
-    // Para cada candidato pi, comprobar que el plano ABpi deja todos los demás puntos a un lado
     int idxC = -1;
-    for (int i = 0; i < n; i++)
-    {
+    for (int i = 0; i < n; i++) {
         if (i == idxA || i == idxB) continue;
-
-        Triangle3d triCandidate(A, B, _points[i]);
-        bool todosAunLado = true;
-        int ladoPrimero = 0; // 0 = sin determinar
-
-        for (int j = 0; j < n; j++)
-        {
+        Triangle3d tri(A, B, _points[i]); bool allOnSide = true; int side = 0;
+        for (int j = 0; j < n; j++) {
             if (j == idxA || j == idxB || j == i) continue;
-            Vect3d pj = _points[j];
-            Vect3d pDiff = pj.sub(A);
-            Vect3d n = triCandidate.normal();
-            double dist = n.dot(pDiff);
-            if (std::abs(dist) < 1e-6) continue; // Considerarlo coplanar
-
-            int ladoActual = (dist > 0.0) ? 1 : -1;
-
-            if (ladoPrimero == 0)
-                ladoPrimero = ladoActual;
-            else if (ladoActual != ladoPrimero)
-            {
-                todosAunLado = false;
-                break;
-            }
+            double d = tri.normal().dot(_points[j].sub(A));
+            if (std::abs(d) < 1e-6) continue;
+            int s = (d > 0) ? 1 : -1;
+            if (side == 0) side = s; else if (side != s) { allOnSide = false; break; }
         }
-
-        if (todosAunLado && ladoPrimero != 0)
-        {
-            idxC = i;
-            break;
-        }
+        if (allOnSide && side != 0) { idxC = i; break; }
     }
+    if (idxC == -1) return nullptr;
+    std::list<Segment3d> Boundary; std::vector<Vect3d> PointsIn;
+    std::set<std::tuple<double, double, double, double, double, double, double, double, double>> CH_cache;
+    
+    auto addTriToCache = [&CH_cache](Vect3d p1, Vect3d p2, Vect3d p3) {
+        if (p2.getX() < p1.getX() || (p2.getX() == p1.getX() && p2.getY() < p1.getY())) std::swap(p1, p2);
+        if (p3.getX() < p2.getX() || (p3.getX() == p2.getX() && p3.getY() < p2.getY())) std::swap(p2, p3);
+        if (p2.getX() < p1.getX() || (p2.getX() == p1.getX() && p2.getY() < p1.getY())) std::swap(p1, p2);
+        CH_cache.insert(std::make_tuple(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), p3.getX(), p3.getY(), p3.getZ()));
+    };
 
-    if (idxC == -1)
-    {
-        std::cout << "No se pudo encontrar el triangulo primigenio. Posiblemente todos los puntos son coplanares." << std::endl;
-        return CH;
-    }
-    Vect3d C = _points[idxC];
-
-    // --- PASO 4: Inicializar estructuras ---
-    std::list<Segment3d> BoundaryCH;        // Aristas frontera
-    std::vector<Vect3d> PointsInCH;         // Puntos ya en la envolvente
-
-    // Crear el primer triángulo orientado hacia afuera
-    Triangle3d primerTri = orientarNormalHaciaAfuera(A, B, C, centroide);
-    CH.push_back(primerTri);
-
-    // Obtener los vértices del triángulo orientado
-    Vect3d tA = primerTri.getA(), tB = primerTri.getB(), tC = primerTri.getC();
-
-    // Insertar las aristas frontera
-    Segment3d arAB(tA, tB), arBC(tB, tC), arCA(tC, tA);
-    BoundaryCH.push_back(arAB);
-    BoundaryCH.push_back(arBC);
-    BoundaryCH.push_back(arCA);
-
-    // Marcar puntos como parte de la envolvente
-    PointsInCH.push_back(tA);
-    PointsInCH.push_back(tB);
-    PointsInCH.push_back(tC);
-
-    // --- PASO 5: Bucle principal ---
-    while (!BoundaryCH.empty())
-    {
-        // Sacar arista frontera D-E
-        Segment3d aristaDE = BoundaryCH.front();
-        BoundaryCH.pop_front();
-
-        Vect3d D = aristaDE.getOrigin();
-        Vect3d E = aristaDE.getDestination();
-
-        // Buscar el vértice V tal que DEV deje todos los puntos a un lado
-        // y DEV no esté ya en CH
+    Triangle3d first = orientarNormalHaciaAfuera(A, B, _points[idxC], centroide);
+    CH.push_back(first);
+    addTriToCache(first.getA(), first.getB(), first.getC());
+    Boundary.push_back(Segment3d(first.getA(), first.getB())); Boundary.push_back(Segment3d(first.getB(), first.getC())); Boundary.push_back(Segment3d(first.getC(), first.getA()));
+    PointsIn.push_back(first.getA()); PointsIn.push_back(first.getB()); PointsIn.push_back(first.getC());
+    int iter = 0;
+    while (!Boundary.empty()) {
+        iter++;
+        if (iter % 10 == 0) std::cout << "[DEBUG LENTO] Iter: " << iter << " | Frontera: " << Boundary.size() << " | Triángulos: " << CH.size() << std::endl;
+        Segment3d seg = Boundary.front(); Boundary.pop_front(); Vect3d D = seg.getOrigin(), E = seg.getDestination();
         int idxV = -1;
-        for (int i = 0; i < n; i++)
-        {
-            Vect3d pi = _points[i];
-            if (pi == D || pi == E) continue;
-
-            // Comprobar que este triángulo no existe ya
-            if (trianguloYaExiste(CH, D, E, pi)) continue;
-
-            Triangle3d triCandidate(D, E, pi);
-            bool todosAunLado = true;
-            int ladoPrimero = 0;
-
-            for (int j = 0; j < n; j++)
-            {
-                Vect3d pj = _points[j];
-                if (pj == D || pj == E || pj == pi) continue;
-
-                Vect3d pDiff = pj.sub(D);
-                Vect3d n = triCandidate.normal();
-                double dist = n.dot(pDiff);
-                if (std::abs(dist) < 1e-6) continue;
-
-                int ladoActual = (dist > 0.0) ? 1 : -1;
-
-                if (ladoPrimero == 0)
-                    ladoPrimero = ladoActual;
-                else if (ladoActual != ladoPrimero)
-                {
-                    todosAunLado = false;
-                    break;
-                }
+        for (int i = 0; i < n; i++) {
+            if (_points[i] == D || _points[i] == E || trianguloYaExiste(CH_cache, D, E, _points[i])) continue;
+            Vect3d nC = E.sub(D).xProduct(_points[i].sub(D));
+            double modSq = nC.dot(nC);
+            if (modSq < 1e-18) continue; // Colineales
+            nC = nC.scalarMul(1.0 / std::sqrt(modSq)); // Normalizar para mantener la tolerancia 1e-6
+            
+            double dD = nC.dot(D);
+            bool allOnSide = true; int side = 0;
+            for (int j = 0; j < n; j++) {
+                if (j == i) continue;
+                double d = nC.dot(_points[j]) - dD;
+                if (std::abs(d) < 1e-6) continue;
+                int s = (d > 0) ? 1 : -1;
+                if (side == 0) side = s; else if (side != s) { allOnSide = false; break; }
             }
-
-            if (todosAunLado)
-            {
-                idxV = i;
-                break;
-            }
+            if (allOnSide && side != 0) { idxV = i; break; }
         }
-
-        if (idxV == -1) continue; // No se encontró candidato (posible degeneración)
-
-        Vect3d V = _points[idxV];
-
-        // Añadir el nuevo triángulo orientado hacia afuera
-        Triangle3d nuevoTri = orientarNormalHaciaAfuera(D, E, V, centroide);
-        CH.push_back(nuevoTri);
-
-        // Gestionar aristas frontera
-        Segment3d aristaDV(D, V);
-        Segment3d aristaEV(E, V);
-
-        if (!puntoEnConjunto(PointsInCH, V))
-        {
-            // V es nuevo: añadir al conjunto y añadir las dos aristas
-            PointsInCH.push_back(V);
-            BoundaryCH.push_back(aristaDV);
-            BoundaryCH.push_back(aristaEV);
-        }
-        else
-        {
-            // V ya pertenece a la envolvente: gestionar cierre de fronteras
-            bool existeDV = existeEnFrontera(BoundaryCH, aristaDV);
-            bool existeEV = existeEnFrontera(BoundaryCH, aristaEV);
-
-            if (existeDV && existeEV)
-            {
-                // Ambas existen: eliminar ambas (cerramos el hueco completo)
-                buscarYEliminar(BoundaryCH, aristaDV);
-                buscarYEliminar(BoundaryCH, aristaEV);
-            }
-            else if (existeDV && !existeEV)
-            {
-                // Solo existe D-V: eliminar D-V y añadir E-V
-                buscarYEliminar(BoundaryCH, aristaDV);
-                BoundaryCH.push_back(aristaEV);
-            }
-            else if (!existeDV && existeEV)
-            {
-                // Solo existe E-V: eliminar E-V y añadir D-V
-                buscarYEliminar(BoundaryCH, aristaEV);
-                BoundaryCH.push_back(aristaDV);
-            }
-            else
-            {
-                // Ninguna existe: añadir ambas
-                BoundaryCH.push_back(aristaDV);
-                BoundaryCH.push_back(aristaEV);
-            }
+        if (idxV == -1) continue;
+        Vect3d V = _points[idxV]; 
+        Triangle3d newTri = orientarNormalHaciaAfuera(D, E, V, centroide);
+        CH.push_back(newTri);
+        addTriToCache(newTri.getA(), newTri.getB(), newTri.getC());
+        
+        Segment3d aDV(D, V), aEV(E, V);
+        if (!puntoEnConjunto(PointsIn, V)) { PointsIn.push_back(V); Boundary.push_back(aDV); Boundary.push_back(aEV); }
+        else {
+            if (existeEnFrontera(Boundary, aDV)) buscarYEliminar(Boundary, aDV); else Boundary.push_back(aDV);
+            if (existeEnFrontera(Boundary, aEV)) buscarYEliminar(Boundary, aEV); else Boundary.push_back(aEV);
         }
     }
-
-    std::cout << "Gift Wrapping O(n^2): " << CH.size() << " triangulos generados." << std::endl;
-    return CH;
+    return new TriangleModel(CH);
 }
 
+TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
+    int nOrig = (int)_points.size(); if (nOrig < 4) return nullptr;
 
-// ========================================================================================
-// CH_GiftWrapping_Fast() — Versión O(n) por iteración usando ángulos entre planos
-// ========================================================================================
-
-// Estructura auxiliar para las aristas frontera con el vértice opuesto del triángulo adyacente
-struct BoundaryEdge
-{
-    Segment3d edge;        // La arista frontera D-E
-    Vect3d oppositeVertex; // El vértice del triángulo adyacente (para calcular el ángulo)
-};
-
-// Función auxiliar: buscar y eliminar un BoundaryEdge
-static bool buscarYEliminarFast(std::list<BoundaryEdge>& frontera, Segment3d& seg)
-{
-    for (auto it = frontera.begin(); it != frontera.end(); ++it)
-    {
-        if (it->edge.compare(seg))
-        {
-            frontera.erase(it);
-            return true;
+    // --- Paso 0: Deduplicar puntos (modelos 3D tienen vértices repetidos) ---
+    std::map<std::tuple<double,double,double>, int> coordMap;
+    std::vector<Vect3d> pts;
+    for (int i = 0; i < nOrig; i++) {
+        auto key = std::make_tuple(_points[i].getX(), _points[i].getY(), _points[i].getZ());
+        if (coordMap.find(key) == coordMap.end()) {
+            coordMap[key] = (int)pts.size();
+            pts.push_back(_points[i]);
         }
     }
-    return false;
-}
+    int n = (int)pts.size();
+    if (n < 4) return nullptr;
 
-// Función auxiliar: comprobar si existe un BoundaryEdge
-static bool existeEnFronteraFast(const std::list<BoundaryEdge>& frontera, Segment3d& seg)
-{
-    for (auto it = frontera.begin(); it != frontera.end(); ++it)
-    {
-        Segment3d s = it->edge;
-        if (s.compare(seg))
-            return true;
-    }
-    return false;
-}
-
-std::vector<Triangle3d> PointCloud3d::CH_GiftWrapping_Fast()
-{
     std::vector<Triangle3d> CH;
-    int n = (int)_points.size();
-
-    if (n < 4)
-    {
-        std::cout << "Se necesitan al menos 4 puntos para calcular la envolvente convexa 3D." << std::endl;
-        return CH;
-    }
-
-    // --- Calcular centroide ---
     Vect3d centroide(0, 0, 0);
-    for (int i = 0; i < n; i++)
-    {
-        Vect3d tmp = centroide.add(_points[i]);
-        centroide = tmp;
-    }
+    for (const auto& p : pts) centroide = centroide.add(p);
     centroide = centroide.scalarMul(1.0 / n);
 
-    // --- PASO 1: Punto A (menor Y) ---
+    // --- Buscar primer triángulo ---
     int idxA = 0;
-    for (int i = 1; i < n; i++)
-    {
-        if (_points[i].getY() < _points[idxA].getY())
-            idxA = i;
-        else if (_points[i].getY() == _points[idxA].getY() && _points[i].getX() < _points[idxA].getX())
-            idxA = i;
-    }
-    Vect3d A = _points[idxA];
-
-    // --- PASO 2: Punto B (Jarvis 2D) ---
+    for (int i = 1; i < n; i++) if (pts[i].getY() < pts[idxA].getY() || (pts[i].getY() == pts[idxA].getY() && pts[i].getX() < pts[idxA].getX())) idxA = i;
     int idxB = -1;
-    double minAngle = 1e18;
-    for (int i = 0; i < n; i++)
-    {
+    for (int i = 0; i < n; i++) {
         if (i == idxA) continue;
-        double dx = _points[i].getX() - A.getX();
-        double dy = _points[i].getY() - A.getY();
-        double angle = std::atan2(dy, dx);
-        if (angle < minAngle || (angle == minAngle && _points[i].distance(A) > _points[idxB].distance(A)))
-        {
-            minAngle = angle;
-            idxB = i;
+        Vect3d vAB = pts[i].sub(pts[idxA]), n2D(-vAB.getY(), vAB.getX(), 0); bool all = true; int s = 0;
+        for (int j = 0; j < n; j++) {
+            if (j == idxA || j == i) continue;
+            double dot = n2D.getX() * (pts[j].getX() - pts[idxA].getX()) + n2D.getY() * (pts[j].getY() - pts[idxA].getY());
+            if (std::abs(dot) < 1e-10) continue;
+            int cur = (dot > 0) ? 1 : -1;
+            if (s == 0) s = cur; else if (s != cur) { all = false; break; }
         }
+        if (all && s != 0) { idxB = i; break; }
     }
-    Vect3d B = _points[idxB];
-
-    // --- PASO 3: Punto C usando ángulo mínimo respecto al plano XY (O(n)) ---
-    // El plano de referencia es el plano horizontal que pasa por A y B (normal = (0,1,0))
-    Vect3d normalRef(0, 1, 0); // Normal del plano XY (horizontal)
+    if (idxB == -1) return nullptr;
     int idxC = -1;
-    double minAngleC = 1e18;
-
-    for (int i = 0; i < n; i++)
-    {
+    for (int i = 0; i < n; i++) {
         if (i == idxA || i == idxB) continue;
-
-        // 1. Obtener normal del candidato orientada hacia afuera
-        Triangle3d triCandDir = orientarNormalHaciaAfuera(A, B, _points[i], centroide);
-        Vect3d normalCandidate = triCandDir.normal();
-
-        // 2. Vector dirección de la arista
-        Vect3d dirAB = B.sub(A);
-        double lenAB = dirAB.module();
-        if (lenAB < 1e-10) continue;
-        dirAB = dirAB.scalarMul(1.0 / lenAB);
-
-        // 3. Ángulo diedro usando atan2 para abarcar los 360 grados
-        // normalRef (0, -1, 0) apunta hacia abajo, equivalente a la normal adyacente del plano base
-        Vect3d normalAdj(0, -1, 0); 
-        double x = normalAdj.dot(normalCandidate);
-        Vect3d cross = normalAdj.xProduct(normalCandidate);
-        double y = cross.dot(dirAB);
-
-        double angle = std::atan2(y, x);
-        if (angle < 0.0) angle += 2.0 * glm::pi<double>(); // Normalizar a [0, 2π)
-
-        if (angle < minAngleC)
-        {
-            minAngleC = angle;
-            idxC = i;
+        Vect3d v1 = pts[idxB].sub(pts[idxA]), v2 = pts[i].sub(pts[idxA]);
+        Vect3d nC = v1.xProduct(v2);
+        if (nC.dot(nC) < 1e-18) continue;
+        bool all = true; int s = 0;
+        for (int j = 0; j < n; j++) {
+            if (j == idxA || j == idxB || j == i) continue;
+            double dot = nC.dot(pts[j].sub(pts[idxA]));
+            if (std::abs(dot) < 1e-10) continue;
+            int cur = (dot > 0) ? 1 : -1;
+            if (s == 0) s = cur; else if (s != cur) { all = false; break; }
         }
+        if (all && s != 0) { idxC = i; break; }
     }
+    if (idxC == -1) return nullptr;
+    
+    Triangle3d first = orientarNormalHaciaAfuera(pts[idxA], pts[idxB], pts[idxC], centroide);
+    CH.push_back(first);
+    
+    int va = idxA, vb = idxB, vc = idxC;
+    Vect3d expN = pts[idxB].sub(pts[idxA]).xProduct(pts[idxC].sub(pts[idxA]));
+    if (first.normal().dot(expN) < 0) { std::swap(va, vb); }
 
-    if (idxC == -1)
-    {
-        std::cout << "No se pudo encontrar el triangulo primigenio (Fast)." << std::endl;
-        return CH;
-    }
-    Vect3d C = _points[idxC];
-
-    // Verificar que el triángulo primigenio deja todos los puntos a un lado
-    Triangle3d triVerif(A, B, C);
-    int ladoVerif = 0;
-    bool validoPrimigenio = true;
-    for (int j = 0; j < n; j++)
-    {
-        if (j == idxA || j == idxB || j == idxC) continue;
-        Triangle3d::PointPosition pos = triVerif.classify(_points[j]);
-        if (pos == Triangle3d::PointPosition::COPLANAR) continue;
-        int lado = (pos == Triangle3d::PointPosition::POSITIVE) ? 1 : -1;
-        if (ladoVerif == 0) ladoVerif = lado;
-        else if (lado != ladoVerif) { validoPrimigenio = false; break; }
-    }
-
-    // Si el ángulo mínimo no da un triángulo válido, probar con el ángulo máximo
-    if (!validoPrimigenio)
-    {
-        double maxAngleC = -1.0;
-        idxC = -1;
-        for (int i = 0; i < n; i++)
-        {
-            if (i == idxA || i == idxB) continue;
-            Vect3d AB = B.sub(A);
-            Vect3d Api = _points[i].sub(A);
-            Vect3d normalCandidate = AB.xProduct(Api);
-            double modCandidate = normalCandidate.module();
-            if (modCandidate < 1e-10) continue;
-            normalCandidate = normalCandidate.scalarMul(1.0 / modCandidate);
-            double dotProd = normalRef.dot(normalCandidate);
-            double cosAngle = std::abs(dotProd);
-            if (cosAngle > 1.0) cosAngle = 1.0;
-            double angle = std::acos(cosAngle);
-            if (angle > maxAngleC)
-            {
-                maxAngleC = angle;
-                idxC = i;
-            }
+    // --- Hash functions para O(1) en vez de O(log n) ---
+    struct PairHash {
+        size_t operator()(const std::pair<int,int>& p) const {
+            return std::hash<long long>()(((long long)p.first << 32) | (unsigned int)p.second);
         }
-        if (idxC == -1)
-        {
-            std::cout << "No se pudo encontrar el triangulo primigenio (Fast, maxAngle)." << std::endl;
-            return CH;
+    };
+    struct TriHash {
+        size_t operator()(const std::tuple<int,int,int>& t) const {
+            size_t h = std::hash<int>()(std::get<0>(t));
+            h ^= std::hash<int>()(std::get<1>(t)) * 2654435761u;
+            h ^= std::hash<int>()(std::get<2>(t)) * 40503u;
+            return h;
         }
-        C = _points[idxC];
-    }
+    };
 
-    // --- PASO 4: Inicializar ---
-    std::list<BoundaryEdge> BoundaryCH;
-    std::vector<Vect3d> PointsInCH;
+    // --- Frontera y mapa de vértices opuestos (O(1) amortizado) ---
+    std::unordered_set<std::pair<int, int>, PairHash> Boundary;
+    auto addE = [&](int u, int v) { if (Boundary.count({v, u})) Boundary.erase({v, u}); else Boundary.insert({u, v}); };
+    addE(va, vb); addE(vb, vc); addE(vc, va);
+    
+    auto getK = [](int u, int v) { return u < v ? std::make_pair(u, v) : std::make_pair(v, u); };
+    std::unordered_map<std::pair<int, int>, int, PairHash> opV; 
+    opV[getK(va, vb)] = vc; opV[getK(vb, vc)] = va; opV[getK(vc, va)] = vb;
 
-    Triangle3d primerTri = orientarNormalHaciaAfuera(A, B, C, centroide);
-    CH.push_back(primerTri);
+    // --- Caché de triángulos con índices enteros (O(1) amortizado) ---
+    auto sortTri = [](int a, int b, int c) -> std::tuple<int,int,int> {
+        if (a > b) std::swap(a, b);
+        if (b > c) std::swap(b, c);
+        if (a > b) std::swap(a, b);
+        return {a, b, c};
+    };
+    std::unordered_set<std::tuple<int,int,int>, TriHash> triCache;
+    triCache.insert(sortTri(va, vb, vc));
 
-    Vect3d tA = primerTri.getA(), tB = primerTri.getB(), tC = primerTri.getC();
+    // --- Bucle principal: O(T * n) ---
+    int iter = 0;
+    while (!Boundary.empty()) {
+        iter++;
+        if (iter % 100 == 0) std::cout << "[DEBUG] Iter: " << iter << " | Frontera: " << Boundary.size() << std::endl;
+        
+        auto edgeIt = Boundary.begin();
+        int D_idx = edgeIt->first, E_idx = edgeIt->second;
+        Boundary.erase(edgeIt);
+        
+        if (!opV.count(getK(D_idx, E_idx))) continue;
+        int idxP = opV[getK(D_idx, E_idx)];
+        
+        Vect3d D = pts[D_idx], E = pts[E_idx], P = pts[idxP];
+        Vect3d eV = E.sub(D);
+        Vect3d vPD = P.sub(D);
+        Vect3d nB = eV.xProduct(vPD);
+        Vect3d yA = eV.xProduct(nB);
+        
+        int best = -1;
+        double minAngle = 1e18;
 
-    // Aristas frontera con el vértice opuesto
-    Segment3d arAB(tA, tB), arBC(tB, tC), arCA(tC, tA);
-    BoundaryCH.push_back({arAB, tC}); // Arista AB, opuesto = C
-    BoundaryCH.push_back({arBC, tA}); // Arista BC, opuesto = A
-    BoundaryCH.push_back({arCA, tB}); // Arista CA, opuesto = B
-
-    PointsInCH.push_back(tA);
-    PointsInCH.push_back(tB);
-    PointsInCH.push_back(tC);
-
-    // --- PASO 5: Bucle principal ---
-    while (!BoundaryCH.empty())
-    {
-        BoundaryEdge edgeFront = BoundaryCH.front();
-        BoundaryCH.pop_front();
-
-        Vect3d D = edgeFront.edge.getOrigin();
-        Vect3d E = edgeFront.edge.getDestination();
-        Vect3d opuesto = edgeFront.oppositeVertex;
-
-        // Calcular la normal del triángulo adyacente (DEopuesto) orientada hacia afuera como referencia
-        Triangle3d triAdjDir = orientarNormalHaciaAfuera(D, E, opuesto, centroide);
-        Vect3d normalAdj = triAdjDir.normal();
-
-        // Buscar el punto V con el menor ángulo respecto al plano adyacente (O(n))
-        int idxV = -1;
-        double minAngleV = 1e18;
-
-        for (int i = 0; i < n; i++)
-        {
-            Vect3d pi = _points[i];
-            if (pi == D || pi == E || pi == opuesto) continue;
-
-            // Comprobar que este triángulo no existe ya
-            if (trianguloYaExiste(CH, D, E, pi)) continue;
-
-            // 1. Obtener la normal del candidato orientada correctamente (hacia afuera)
-            Triangle3d triCandDir = orientarNormalHaciaAfuera(D, E, pi, centroide);
-            Vect3d normalCandidate = triCandDir.normal();
-
-            // 2. Vector dirección de la arista
-            Vect3d dirDE = E.sub(D);
-            double lenDE = dirDE.module();
-            if (lenDE < 1e-10) continue;
-            dirDE = dirDE.scalarMul(1.0 / lenDE);
-
-            // 3. Ángulo diedro usando atan2 para abarcar los 360 grados
-            // normalAdj es la normal de la cara adyacente (también apuntando hacia afuera)
-            double x = normalAdj.dot(normalCandidate);
-            Vect3d cross = normalAdj.xProduct(normalCandidate);
-            double y = cross.dot(dirDE);
-
-            double angle = std::atan2(y, x);
-            if (angle < 0.0) angle += 2.0 * glm::pi<double>(); // Normalizar a [0, 2π)
-
-            if (angle < minAngleV)
-            {
-                minAngleV = angle;
-                idxV = i;
-            }
-        }
-
-        if (idxV == -1) continue;
-
-        Vect3d V = _points[idxV];
-
-        // Verificar que DEV deja todos los puntos a un lado
-        Triangle3d triVerifV(D, E, V);
-        bool validoV = true;
-        int ladoV = 0;
-        for (int j = 0; j < n; j++)
-        {
-            Vect3d pj = _points[j];
-            if (pj == D || pj == E || pj == V) continue;
+        for (int i = 0; i < n; i++) {
+            if (i == D_idx || i == E_idx || i == idxP) continue;
+            if (triCache.count(sortTri(D_idx, E_idx, i))) continue;
+            if (Boundary.count({D_idx, i}) || Boundary.count({i, E_idx})) continue;
             
-            Vect3d pDiff = pj.sub(D);
-            Vect3d n = triVerifV.normal();
-            double dist = n.dot(pDiff);
-            if (std::abs(dist) < 1e-6) continue;
-
-            int lado = (dist > 0.0) ? 1 : -1;
-            if (ladoV == 0) ladoV = lado;
-            else if (lado != ladoV) { validoV = false; break; }
+            Vect3d diff = pts[i].sub(D);
+            Vect3d n_new = diff.xProduct(eV);
+            double modSq = n_new.dot(n_new);
+            if (modSq < 1e-18) continue;
+            
+            double cX = n_new.dot(nB), cY = n_new.dot(yA);
+            double angle = std::atan2(cY, cX); 
+            
+            if (angle < minAngle) {
+                best = i;
+                minAngle = angle;
+            }
         }
-
-        // Si la verificación falla, buscar con fuerza bruta O(n²) como fallback
-        if (!validoV)
-        {
-            idxV = -1;
-            for (int i = 0; i < n; i++)
-            {
-                Vect3d pi = _points[i];
-                if (pi == D || pi == E) continue;
-                if (trianguloYaExiste(CH, D, E, pi)) continue;
-
-                Triangle3d triCand(D, E, pi);
-                bool todosAunLado = true;
-                int ladoP = 0;
-                for (int j = 0; j < n; j++)
-                {
-                    Vect3d pj = _points[j];
-                    if (pj == D || pj == E || pj == pi) continue;
-                    
-                    Vect3d pDiff = pj.sub(D);
-                    Vect3d n = triCand.normal();
-                    double dist = n.dot(pDiff);
-                    if (std::abs(dist) < 1e-6) continue;
-
-                    int lp = (dist > 0.0) ? 1 : -1;
-                    if (ladoP == 0) ladoP = lp;
-                    else if (lp != ladoP) { todosAunLado = false; break; }
-                }
-                if (todosAunLado)
-                {
-                    idxV = i;
-                    break;
-                }
-            }
-            if (idxV == -1) continue;
-            V = _points[idxV];
-        }
-
-        // Añadir triángulo orientado
-        Triangle3d nuevoTri = orientarNormalHaciaAfuera(D, E, V, centroide);
-        CH.push_back(nuevoTri);
-
-        // Gestionar aristas frontera
-        Segment3d aristaDV(D, V);
-        Segment3d aristaEV(E, V);
-
-        if (!puntoEnConjunto(PointsInCH, V))
-        {
-            PointsInCH.push_back(V);
-            BoundaryCH.push_back({aristaDV, E}); // Opuesto del triángulo DEV para arista DV es E
-            BoundaryCH.push_back({aristaEV, D}); // Opuesto del triángulo DEV para arista EV es D
-        }
-        else
-        {
-            bool existeDV = existeEnFronteraFast(BoundaryCH, aristaDV);
-            bool existeEV = existeEnFronteraFast(BoundaryCH, aristaEV);
-
-            if (existeDV && existeEV)
-            {
-                buscarYEliminarFast(BoundaryCH, aristaDV);
-                buscarYEliminarFast(BoundaryCH, aristaEV);
-            }
-            else if (existeDV && !existeEV)
-            {
-                buscarYEliminarFast(BoundaryCH, aristaDV);
-                BoundaryCH.push_back({aristaEV, D});
-            }
-            else if (!existeDV && existeEV)
-            {
-                buscarYEliminarFast(BoundaryCH, aristaEV);
-                BoundaryCH.push_back({aristaDV, E});
-            }
-            else
-            {
-                BoundaryCH.push_back({aristaDV, E});
-                BoundaryCH.push_back({aristaEV, D});
-            }
+        
+        if (best != -1) {
+            Triangle3d newTri(pts[E_idx], pts[D_idx], pts[best]);
+            CH.push_back(newTri); 
+            triCache.insert(sortTri(D_idx, E_idx, best));
+            addE(D_idx, best); addE(best, E_idx);
+            opV[getK(D_idx, best)] = E_idx; 
+            opV[getK(best, E_idx)] = D_idx;
         }
     }
-
-    std::cout << "Gift Wrapping O(n) [Fast]: " << CH.size() << " triangulos generados." << std::endl;
-    return CH;
-}
-
-
-// ========================================================================================
-// CH_GiftWrapping_Model() — Devuelve un TriangleModel
-// ========================================================================================
-TriangleModel* PointCloud3d::CH_GiftWrapping_Model()
-{
-    std::vector<Triangle3d> triangles = CH_GiftWrapping();
-    if (triangles.empty()) return nullptr;
-    return new TriangleModel(triangles);
+    std::cout << "Envolvente OPTIMIZADA: " << CH.size() << " triangulos." << std::endl;
+    return new TriangleModel(CH);
 }
 

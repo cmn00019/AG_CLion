@@ -28,7 +28,7 @@ protected:
 	/**
 	*	@brief Checks if the parametric value t is between 0 and 1 as a segment is not infinite.
 	*/
-	virtual bool isTvalid(double t) { return (t >= 0.0f && t <= 1.0f); }
+	virtual bool isTvalid(double t) const { return (t >= 0.0f && t <= 1.0f); }
 
 public:
 	/**
@@ -39,7 +39,7 @@ public:
 	/**
 	*	@brief Constructor.
 	*/
-	Segment3d(Vect3d& orig, Vect3d& dest);
+	Segment3d(const Vect3d& orig, const Vect3d& dest);
 
 	/**
 	*	@brief Copy constructor.
@@ -59,7 +59,7 @@ public:
         /**
 	*	@brief Obtains de minimum segment-point distance
 	*/
-	double distance(Vect3d& v);
+	double distance(const Vect3d& v) const;
 	
 	/**
 	*	@brief Assignment operator.

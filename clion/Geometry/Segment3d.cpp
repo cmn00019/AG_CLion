@@ -2,7 +2,7 @@
 #include "Segment3d.h"
 
 
-Segment3d::Segment3d(Vect3d & orig, Vect3d & dest)
+Segment3d::Segment3d(const Vect3d & orig, const Vect3d & dest)
 	: Edge3d(orig, dest)
 {
 }
@@ -40,7 +40,7 @@ std::ostream& operator<<(std::ostream& os, const Segment3d& segment)
 	return os;
 }
 
-double Segment3d::distance(Vect3d& v){
+double Segment3d::distance(const Vect3d& v) const {
 
     Vect3d d = _dest.sub(_orig);    // direccion P0 -> P1
     Vect3d qp = v.sub(_orig);       // Q - P0

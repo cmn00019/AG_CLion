@@ -153,17 +153,14 @@ public:
 	/**
 	*	@brief Calcula la envolvente convexa 3D mediante Gift Wrapping en O(n²) por iteración.
 	*/
-	std::vector<Triangle3d> CH_GiftWrapping();
+	TriangleModel* CH_GiftWrapping();
 
 	/**
-	*	@brief Calcula la envolvente convexa 3D mediante Gift Wrapping optimizado con ángulos en O(n) por iteración.
+	*	@brief Calcula la envolvente convexa 3D mediante Gift Wrapping optimizado (O(n) por arista).
+	*	Utiliza comparaciones de productos vectoriales y escalares para evitar trigonometría pesada.
+	*   Sigue el algoritmo de actualización de fronteras solicitado para el TFG.
 	*/
-	std::vector<Triangle3d> CH_GiftWrapping_Fast();
-
-	/**
-	*	@brief Calcula la envolvente convexa y devuelve un TriangleModel.
-	*/
-	TriangleModel* CH_GiftWrapping_Model();
+	TriangleModel* CH_GiftWrapping_Optimized();
 };
 
 

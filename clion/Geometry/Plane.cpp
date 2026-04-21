@@ -3,7 +3,7 @@
 #include "BasicGeometry.h"
 
 
-Plane::Plane(Vect3d & p, Vect3d & u, Vect3d & v, bool hayPuntos)
+Plane::Plane(const Vect3d & p, const Vect3d & u, const Vect3d & v, bool hayPuntos)
 {
 	if (!hayPuntos)
 	{			
@@ -27,12 +27,12 @@ Plane::~Plane()
 {
 }
 
-bool Plane::coplanar(Vect3d & point)
+bool Plane::coplanar(const Vect3d & point) const
 {  
     return BasicGeometry::equal(distance(point), 0.0);
 }
 
-double Plane::distance(Vect3d & point)
+double Plane::distance(const Vect3d & point) const
 {
     //  lambda = -(n*p + d) / (n*n), dist = |lambda| * ||n||
     Vect3d n = getNormal();
@@ -43,7 +43,7 @@ double Plane::distance(Vect3d & point)
     return std::abs(lambda) * n.module();
 }    
 
-double Plane::distance(Vect3d & v, Vect3d & q)
+double Plane::distance(const Vect3d & v, Vect3d & q) const
 {
     // lambda = -(n*v + d) / (n*n), q = v + lambda*n
     Vect3d n = getNormal();
@@ -57,27 +57,27 @@ double Plane::distance(Vect3d & v, Vect3d & q)
 }
 
 
-double Plane::getA()
+double Plane::getA() const
 {
 	return (BasicGeometry::determinant2x2(_c.getZ() - _a.getZ(), _c.getY() - _a.getY(), _b.getY() - _a.getY(), _b.getZ() - _a.getZ()));
 }
 
-double Plane::getB()
+double Plane::getB() const
 {
 	return (BasicGeometry::determinant2x2(_c.getX() - _a.getX(), _c.getZ() - _a.getZ(), _b.getZ() - _a.getZ(), _b.getX() - _a.getX()));	
 }
 
-double Plane::getC()
+double Plane::getC() const
 {
 	return (BasicGeometry::determinant2x2(_c.getY() - _a.getY(), _c.getX() - _a.getX(), _b.getX() - _a.getX(), _b.getY() - _a.getY()));
 }
 
-Vect3d Plane::getNormal()
+Vect3d Plane::getNormal() const
 {
     return Vect3d(getA(), getB(), getC());
 }
 
-bool Plane::intersect(Plane & plane, Line3d & line)
+bool Plane::intersect(const Plane & plane, Line3d & line) const
 {
     // n3 = n1 x n2
     Vect3d n1 = this->getNormal();
@@ -110,7 +110,7 @@ bool Plane::intersect(Plane & plane, Line3d & line)
     return true;
 }
 
-bool Plane::intersect(Line3d & line, Vect3d & point)
+bool Plane::intersect(const Line3d & line, Vect3d & point) const
 {   
     // lambda = -(n*t + d) / (n*v)
     Vect3d n = getNormal();
@@ -132,7 +132,7 @@ bool Plane::intersect(Line3d & line, Vect3d & point)
     return true;
 }
 
-bool Plane::intersect(Plane& pa, Plane& pb, Vect3d& punto)
+bool Plane::intersect(const Plane& pa, const Plane& pb, Vect3d& punto) const
 {
     //Interseccion 3 planos
     double a1 = this->getA(), b1 = this->getB(), c1 = this->getC(), dd1 = this->getD();
@@ -151,7 +151,7 @@ bool Plane::intersect(Plane& pa, Plane& pb, Vect3d& punto)
     return true;
 }
 
-Vect3d Plane::reflectedPoint(Vect3d & v)
+Vect3d Plane::reflectedPoint(const Vect3d & v) const
 {
     // lambda = -2(n*p + d) / (n*n), q = p + lambda*n
     Vect3d n = getNormal();
@@ -201,7 +201,7 @@ static bool pointInPolygon2D(double px, double py, const std::vector<std::pair<d
     return (crossings % 2) != 0;
 }
 
-bool Plane::intersectLine3dPolygon(Line3d& line, std::vector<Vect3d>& polygon, Vect3d& punto)
+bool Plane::intersectLine3dPolygon(const Line3d& line, const std::vector<Vect3d>& polygon, Vect3d& punto)
 {
     if (polygon.size() < 3)
         return false;
@@ -223,7 +223,7 @@ bool Plane::intersectLine3dPolygon(Line3d& line, std::vector<Vect3d>& polygon, V
     else if (ay >= ax && ay >= az) dropAxis = 1;
 
     // Projectar los vertices del polígono
-    auto project2D = [dropAxis](Vect3d& v) -> std::pair<double,double> {
+    auto project2D = [dropAxis](const Vect3d& v) -> std::pair<double,double> {
         if (dropAxis == 0) return {v.getY(), v.getZ()};
         if (dropAxis == 1) return {v.getX(), v.getZ()};
         return {v.getX(), v.getY()};
@@ -238,7 +238,7 @@ bool Plane::intersectLine3dPolygon(Line3d& line, std::vector<Vect3d>& polygon, V
     return pointInPolygon2D(pt2D.first, pt2D.second, poly2D);
 }
 
-bool Plane::intersectSegment3dPolygon(Segment3d& segment, std::vector<Vect3d>& polygon, Vect3d& punto)
+bool Plane::intersectSegment3dPolygon(const Segment3d& segment, const std::vector<Vect3d>& polygon, Vect3d& punto)
 {
     if (polygon.size() < 3)
         return false;
@@ -273,7 +273,7 @@ bool Plane::intersectSegment3dPolygon(Segment3d& segment, std::vector<Vect3d>& p
     if (ax >= ay && ax >= az) dropAxis = 0;
     else if (ay >= ax && ay >= az) dropAxis = 1;
 
-    auto project2D = [dropAxis](Vect3d& v) -> std::pair<double,double> {
+    auto project2D = [dropAxis](const Vect3d& v) -> std::pair<double,double> {
         if (dropAxis == 0) return {v.getY(), v.getZ()};
         if (dropAxis == 1) return {v.getX(), v.getZ()};
         return {v.getX(), v.getY()};

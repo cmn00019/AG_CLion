@@ -81,7 +81,7 @@ public:
 	/**
 	*	@brief Constructor.
 	*/
-	Triangle3d(Vect3d& va, Vect3d& vb, Vect3d& vc);
+	Triangle3d(const Vect3d& va, const Vect3d& vb, const Vect3d& vc);
 
 	/**
 	*	@brief Destructor.
@@ -91,53 +91,53 @@ public:
 	/**
 	*	@brief Devuelve el area del triangulo.
 	*/
-	double area();
+	double area() const;
 
 	/**
 	*	@brief Prueba de interseccion Rayo-Triangulo.
 	*/
-	bool ray_tri(Ray3d& ray, Vect3d& p);
+	bool ray_tri(const Ray3d& ray, Vect3d& p) const;
 
 	/**
 	*	@brief Prueba de interseccion AABB-Triangulo.
 	*/
-	bool tri_AABB(AABB& box);
+	bool tri_AABB(const AABB& box) const;
 
 	/**
 	*	@brief Prueba de interseccion Triangulo-Triangulo.
 	*/
-	bool tri_tri(Triangle3d& tri);
+	bool tri_tri(const Triangle3d& tri) const;
 
 
 	/**
 	*	@brief Devuelve la posicion del punto respecto al plano del triangulo.
 	*/
-	PointPosition classify(Vect3d& point);
+	PointPosition classify(const Vect3d& point) const;
 
 	/**
 	*	@brief Devuelve un nuevo triangulo con los mismos valores que este.
 	*/
-	Triangle3d copy() { return Triangle3d(_a, _b, _c); }
+	Triangle3d copy() const { return Triangle3d(_a, _b, _c); }
 
 	/**
 	*	@brief Devuelve el primer punto.
 	*/
-	Vect3d getA() { return _a; }
+	Vect3d getA() const { return _a; }
 
 	/**
 	*	@brief Devuelve el segundo punto.
 	*/
-	Vect3d getB() { return _b; }
+	Vect3d getB() const { return _b; }
 	
 	/**
 	*	@brief Devuelve el tercer punto.
 	*/
-	Vect3d getC() { return _c; }
+	Vect3d getC() const { return _c; }
 
 	/**
 	*	@brief Devuelve la normal del triangulo.
 	*/
-	Vect3d normal();
+	Vect3d normal() const;
 
 	/**
 	*	@brief Operador de asignacion.

@@ -38,7 +38,7 @@ protected:
 	/**
 	*	@brief Checks if the parametric value t is valid. Any value is valid for a line.
 	*/
-	virtual bool isTvalid(double t) { return true; }
+	virtual bool isTvalid(double t) const { return true; }
 
 public:
 	/**
@@ -49,7 +49,7 @@ public:
 	/**
 	*	@brief Constructor.
 	*/
-	Line3d(Vect3d& orig, Vect3d& dest);
+	Line3d(const Vect3d& orig, const Vect3d& dest);
 
 	/**
 	*	@brief Copy constructor.
@@ -64,18 +64,18 @@ public:
 	/**
 	*	@brief Distance between two lines.
 	*/
-	double distance(Line3d& line);
+	double distance(const Line3d& line) const;
     
     
     /**
     *    @brief Distance between point p and this.
     */
-    double distance(Vect3d& p);
+    double distance(const Vect3d& p) const;
 
 	/**
 	*	@brief Returns the normal to this line that passes through p.
 	*/
-	Line3d normalLine(Vect3d& p);
+	Line3d normalLine(const Vect3d& p) const;
 
 	/**
 	*	@brief Assignment operator.

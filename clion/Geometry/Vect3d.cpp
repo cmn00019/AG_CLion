@@ -28,50 +28,50 @@ Vect3d::~Vect3d()
 {
 }
 
-Vect3d Vect3d::add(Vect3d & b)
+Vect3d Vect3d::add(const Vect3d & b) const
 {
 	return Vect3d(getX() + b.getX(), getY() + b.getY(), getZ() + b.getZ());
 }
 
-bool Vect3d::collinear(Vect3d & a, Vect3d & b)
+bool Vect3d::collinear(const Vect3d & a, const Vect3d & b) const
 {
 	Triangle3d tr (a, b, *this);
 
 	return BasicGeometry::equal(tr.area(), glm::epsilon<double>());
 }
 
-double Vect3d::distance(Vect3d & p)
+double Vect3d::distance(const Vect3d & p) const
 {
     Vect3d diff = this->sub(p);
     return diff.module();
 }
 
-double Vect3d::dot(Vect3d & v)
+double Vect3d::dot(const Vect3d & v) const
 {
 	return (getX() * v.getX() + getY() * v.getY() + getZ() * v.getZ());
 }
 
-std::vector<double> Vect3d::getVert()
+std::vector<double> Vect3d::getVert() const
 {
 	return std::vector<double> {getX(), getY(), getZ()};
 }
 
-double Vect3d::getX()
+double Vect3d::getX() const
 {
 	return _value[X];
 }
 
-double Vect3d::getY()
+double Vect3d::getY() const
 {
 	return _value[Y];
 }
 
-double Vect3d::getZ()
+double Vect3d::getZ() const
 {
 	return _value[Z];
 }
 
-double Vect3d::module()
+double Vect3d::module() const
 {
 	return sqrt(getX() * getX() + getY() * getY() + getZ() * getZ());
 }
@@ -85,12 +85,12 @@ Vect3d& Vect3d::operator=(const Vect3d & vector)
 	return *this;
 }
 
-bool Vect3d::operator==(const Vect3d & vector)
+bool Vect3d::operator==(const Vect3d & vector) const
 {
 	return BasicGeometry::equal(getX(), vector._value[X]) && BasicGeometry::equal(getY(), vector._value[Y]) && BasicGeometry::equal(getZ(), vector._value[Z]);
 }
 
-bool Vect3d::operator!=(const Vect3d & vector)
+bool Vect3d::operator!=(const Vect3d & vector) const
 {
 	return !(this->operator==(vector));
 }
@@ -101,7 +101,7 @@ std::ostream& operator<<(std::ostream& os, const Vect3d& vec)
 	return os;
 }
 
-Vect3d Vect3d::scalarMul(double value)
+Vect3d Vect3d::scalarMul(double value) const
 {
 	return Vect3d(getX() * value, getY() * value, getZ() * value);
 }
@@ -128,17 +128,17 @@ void Vect3d::setVert(double x, double y, double z)
 	this->_value[Z] = z;
 }
 
-Vect3d Vect3d::sub(Vect3d & b)
+Vect3d Vect3d::sub(const Vect3d & b) const
 {
 	return Vect3d(getX() - b.getX(), getY() - b.getY(), getZ() - b.getZ());
 }
 
-Vect3d Vect3d::xProduct(Vect3d & b)
+Vect3d Vect3d::xProduct(const Vect3d & b) const
 {
 	return Vect3d(getY() * b.getZ() - getZ() * b.getY(), getZ() * b.getX() - getX() * b.getZ(), getX() * b.getY() - getY() * b.getX());
 }
 
-void Vect3d::getPlane(Vect3d& v, Vect3d& n, float& d)
+void Vect3d::getPlane(const Vect3d& v, Vect3d& n, float& d) const
 {
     // plano equidistante
     // n = v - this (normal)

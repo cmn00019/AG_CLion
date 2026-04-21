@@ -21,7 +21,7 @@ Triangle3d::Triangle3d(const Triangle3d & triangle)
 {
 }
 
-Triangle3d::Triangle3d(Vect3d & va, Vect3d & vb, Vect3d & vc)
+Triangle3d::Triangle3d(const Vect3d & va, const Vect3d & vb, const Vect3d & vc)
 	: _a(va), _b(vb), _c(vc)
 {
 }
@@ -30,7 +30,7 @@ Triangle3d::~Triangle3d()
 {
 }
 
-double Triangle3d::area()
+double Triangle3d::area() const
 {
     Vect3d v1(_b.sub(_a));
     Vect3d v2(_c.sub(_a));
@@ -38,7 +38,7 @@ double Triangle3d::area()
     return cross.module() / 2.0;
 }
 
-bool Triangle3d::ray_tri(Ray3d& ray, Vect3d& p)
+bool Triangle3d::ray_tri(const Ray3d& ray, Vect3d& p) const
 {
     // Algoritmo de Moller
     Vect3d edge1(_b.sub(_a));
@@ -77,7 +77,7 @@ bool Triangle3d::ray_tri(Ray3d& ray, Vect3d& p)
     return false;
 }
 
-bool Triangle3d::tri_AABB(AABB& box)
+bool Triangle3d::tri_AABB(const AABB& box) const
 {
     vec3 c = box.center();
     vec3 e = box.extent();
@@ -132,7 +132,7 @@ bool Triangle3d::tri_AABB(AABB& box)
     return true;
 }
 
-bool Triangle3d::tri_tri(Triangle3d& tri)
+bool Triangle3d::tri_tri(const Triangle3d& tri) const
 {
 	Vect3d v0 = _a, v1 = _b, v2 = _c;
 	Vect3d u0 = tri._a, u1 = tri._b, u2 = tri._c;
@@ -204,7 +204,7 @@ bool Triangle3d::tri_tri(Triangle3d& tri)
 	return true;
 }
 
-Triangle3d::PointPosition Triangle3d::classify(Vect3d & point)
+Triangle3d::PointPosition Triangle3d::classify(const Vect3d & point) const
 {
     Vect3d n = this->normal();
     Vect3d diff = point.sub(_a);
@@ -217,7 +217,7 @@ Triangle3d::PointPosition Triangle3d::classify(Vect3d & point)
     return PointPosition::NEGATIVE;
 }
 
-Vect3d Triangle3d::normal()
+Vect3d Triangle3d::normal() const
 {
 	Vect3d v1 (_b.sub(_a));
 	Vect3d v2 (_c.sub(_a));

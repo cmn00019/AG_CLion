@@ -6,7 +6,7 @@ Line3d::Line3d()
 {
 }
 
-Line3d::Line3d(Vect3d & orig, Vect3d & dest)
+Line3d::Line3d(const Vect3d & orig, const Vect3d & dest)
 	: Edge3d(orig, dest)
 {
 }
@@ -21,7 +21,7 @@ Line3d::~Line3d()
 }
 
 
-double Line3d::distance(Line3d & line)
+double Line3d::distance(const Line3d & line) const
 {
     // d = |(q-q')·(v×v')| / ||v×v'||
     Vect3d v = _dest.sub(_orig);          // direccion de la linea
@@ -43,7 +43,7 @@ double Line3d::distance(Line3d & line)
     return num / crossMod;
 }
 
-Line3d Line3d::normalLine(Vect3d & point)
+Line3d Line3d::normalLine(const Vect3d & point) const
 {
     //  λ = v·(p-t)/(v·v), Q = t + λv
     Vect3d v = _dest.sub(_orig);
@@ -54,7 +54,7 @@ Line3d Line3d::normalLine(Vect3d & point)
     return Line3d(foot, point);
 }
 
-double Line3d::distance(Vect3d& p){
+double Line3d::distance(const Vect3d& p) const {
     // λ = v·(p-t)/(v·v), dist = ||p - t - λv||
     Vect3d v = _dest.sub(_orig);
     Vect3d pt = p.sub(_orig);

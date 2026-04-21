@@ -57,7 +57,7 @@ public:
 	*	@param v in pi = p + u * lambda + v * mu -> t from the points (R, S, T).
 	*	@param If arePoints is false, then params are p + u * lambda + v * mu, otherwise are points (R, S, T).
 	*/
-	Plane(Vect3d& p, Vect3d& u, Vect3d& v, bool hayPuntos);
+	Plane(const Vect3d& p, const Vect3d& u, const Vect3d& v, bool hayPuntos);
 
 	/**
 	*	@brief Copy constructor.
@@ -72,72 +72,68 @@ public:
 	/**
 	*	@brief Returns true if p is in the plane.
 	*/	
-	bool coplanar(Vect3d& point);
+	bool coplanar(const Vect3d& point) const;
 
 	/**
 	*	@brief Distance between the plane and the point.
 	*/
-	double distance(Vect3d& point);
+	double distance(const Vect3d& point) const;
 
 	/**
 	*	@brief Distance between the plane and the point v, also returns the closest point q on the plane. (eq3d_dvp)
 	*/
-	double distance(Vect3d& v, Vect3d& q);
+	double distance(const Vect3d& v, Vect3d& q) const;
 
 	/**
 	*	@brief Returns A in AX + BY + CZ + D = 0.
 	*/
-	double getA();
+	double getA() const;
 
 	/**
 	*	@brief Returns B in AX + BY + CZ + D = 0.
 	*/
-	double getB();
+	double getB() const;
 
 	/**
 	*	@brief Returns C in AX + BY + CZ + D = 0.
 	*/
-	double getC();
+	double getC() const;
 
 	/**
 	*	@return D in AX + BY + CZ + D = 0.
 	*/
-	double getD() { return (-1.0) * (getA() * _a.getX() + getB() * _a.getY() + getC() * _a.getZ()); }
-
-	/**
-	*	@brief Returns the normal vector of (A, B, C) in Ax + By + Cz + D = 0.
-	*/
-	Vect3d getNormal();
+	double getD() const { return (-1.0) * (getA() * _a.getX() + getB() * _a.getY() + getC() * _a.getZ()); }
+	Vect3d getNormal() const;
 
     /**
 	*	@brief Calculates the intersection point of a line and this plane, if exists.
 	*/
-	bool intersect(Line3d& line, Vect3d& point);
+	bool intersect(const Line3d& line, Vect3d& point) const;
         
     /**
 	*	@brief Calculates the intersection point of three planes.
 	*/
-	bool intersect(Plane& pa, Plane& pb, Vect3d& punto);
+	bool intersect(const Plane& pa, const Plane& pb, Vect3d& punto) const;
         
 	/**
 	*	@brief Calculates the intersection line of a plane with this plane.
 	*/
-	bool intersect(Plane& plane, Line3d& line);
+	bool intersect(const Plane& plane, Line3d& line) const;
 
 	/**
 	*	@brief Reflects a point with respect to this plane.
 	*/
-	Vect3d reflectedPoint(Vect3d& v);
+	Vect3d reflectedPoint(const Vect3d& v) const;
 
 	/**
 	*	@brief Intersection of a line with a 3D polygon (sorteo #6).
 	*/
-	static bool intersectLine3dPolygon(Line3d& line, std::vector<Vect3d>& polygon, Vect3d& punto);
+	static bool intersectLine3dPolygon(const Line3d& line, const std::vector<Vect3d>& polygon, Vect3d& punto);
 
 	/**
 	*	@brief Intersection of a segment with a 3D polygon (sorteo #8).
 	*/
-	static bool intersectSegment3dPolygon(Segment3d& segment, std::vector<Vect3d>& polygon, Vect3d& punto);
+	static bool intersectSegment3dPolygon(const Segment3d& segment, const std::vector<Vect3d>& polygon, Vect3d& punto);
 	
 	/**
 	*	@brief Assignment operator.
