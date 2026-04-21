@@ -30,11 +30,11 @@ namespace AlgGeom
 		// PR5 variables
 		bool _isPr5Active = false;
 		bool _showPr5Slow = false;
-		bool _showPr5Fast = false;
-		std::vector<Triangle3d> _chSlow;
-		std::vector<Triangle3d> _chFast;
+		bool _pr5Wireframe = false;
+		int _pr5SpeedMs = 500;
+		::TriangleModel* _chSlowModel = nullptr;
+		mat4 _pr5ModelMatrix = mat4(1.0f);
 		int _visibleSlow = 0;
-		int _visibleFast = 0;
 		int _frameCounterPr5 = 0;
 		PointCloud3d* _cloudPr5 = nullptr;
 
@@ -67,8 +67,9 @@ namespace AlgGeom
 		void buildPr3a();
 		void buildPr4();
 		void buildPr5();
+		void buildPr5FromModel();
 		void generateCloudPr5();
-		void runComparativePr5();
+		void clearPr5Scene();
 		void update_pr5();
 		void update_pr4(bool skipTriTest = false);
 		void syncPr4Visuals();

@@ -434,24 +434,43 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			}
 		}
 
-		GuiUtilities::leaveSpace(1);
-		
-		ImGui::Text("Practica 5");
-		ImGui::Separator();
-		if (ImGui::Button("PR5: Generar Nube"))
+		ImGui::SameLine();
+		if (ImGui::Button("PR5 Nube"))
 		{
 			sceneContent->buildPr5();
 			_modelCompSelected = nullptr;
 		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("PR5 Modelo"))
+		{
+			if (sceneContent->_drawA_ref == nullptr)
+			{
+				std::cout << "Por favor, cargue un modelo (Open Model) antes de generar envolvente convexa." << std::endl;
+			}
+			else
+			{
+				sceneContent->buildPr5FromModel();
+				_modelCompSelected = nullptr;
+			}
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Limpiar PR5"))
+		{
+		    sceneContent->clearPr5Scene();
+		    _modelCompSelected = nullptr;
+		}
+
+		GuiUtilities::leaveSpace(1);
+		
+		ImGui::Text("Filtros Pr5");
+		ImGui::Separator();
 		if (sceneContent->_isPr5Active && sceneContent->_cloudPr5 != nullptr)
 		{
-		    ImGui::Checkbox("O(n^2) Lento (Rojo)", &sceneContent->_showPr5Slow);
-		    ImGui::Checkbox("O(n) Rápido (Verde)", &sceneContent->_showPr5Fast);
-		    
-		    if (ImGui::Button("Mostrar Comparativa PR5"))
-		    {
-		        sceneContent->runComparativePr5();
-		    }
+		    ImGui::Checkbox("Ver Envolvente", &sceneContent->_showPr5Slow);
+		    ImGui::Checkbox("Modo Wireframe", &sceneContent->_pr5Wireframe);
+		    ImGui::SliderInt("Velocidad (ms)", &sceneContent->_pr5SpeedMs, 50, 2000);
 		}
 
 		GuiUtilities::leaveSpace(1);
@@ -526,7 +545,7 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 					isSelectedValid = true;
 				}
 
-				const std::string compName = sceneContent->_model[modelIdx]->getName() + ", " + "Comp. " + std::to_string(compIdx);
+				const std::string compName = sceneContent->_model[modelIdx]->getName() + ", Comp. " + std::to_string(compIdx) + "##" + std::to_string(modelIdx) + "_" + std::to_string(compIdx);
 				if (ImGui::Selectable(compName.c_str(), _modelCompSelected == sceneContent->_model[modelIdx]->_components[compIdx].get()))
 				{
 					_modelCompSelected = sceneContent->_model[modelIdx]->_components[compIdx].get();

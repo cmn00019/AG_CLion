@@ -1190,7 +1190,6 @@ void AlgGeom::SceneContent::buildPr5()
 	// Setup flag
 	_isPr5Active = true;
 	_showPr5Slow = false;
-	_showPr5Fast = false;
 	
     generateCloudPr5();
 }
@@ -1200,11 +1199,9 @@ void AlgGeom::SceneContent::generateCloudPr5()
     clearScene();
     
     _showPr5Slow = false;
-    _showPr5Fast = false;
-    _chSlow.clear();
-    _chFast.clear();
+    _chSlowModel = nullptr;
+    _pr5ModelMatrix = mat4(1.0f);
     _visibleSlow = 0;
-    _visibleFast = 0;
     _frameCounterPr5 = 0;
     
     if (_cloudPr5) delete _cloudPr5;
@@ -1218,46 +1215,66 @@ void AlgGeom::SceneContent::generateCloudPr5()
     std::cout << "Nube de puntos creada con " << _cloudPr5->size() << " puntos." << std::endl;
 
     // Dibujar solo la nube de puntos al principio
-    this->addNewModel((new DrawPointCloud3d(*_cloudPr5))->setPointColor(vec3(0.2f, 0.6f, 1.0f))->overrideModelName()->setPointSize(5.0f));
+    DrawPointCloud3d* dpc = new DrawPointCloud3d(*_cloudPr5);
+    dpc->setPointColor(vec3(0.2f, 0.6f, 1.0f))->setName("PR5_Cloud")->setPointSize(5.0f);
+    this->addNewModel(dpc);
     
-    // Generamos las envolventes a escondidas para no parar el Render:
-    _chSlow = _cloudPr5->CH_GiftWrapping();
-    _chFast = _cloudPr5->CH_GiftWrapping_Fast();
+    // Generamos la envolvente a escondidas para no parar el Render:
+    _chSlowModel = _cloudPr5->CH_GiftWrapping();
     
     std::cout << "============================================" << std::endl;
 }
 
-void AlgGeom::SceneContent::runComparativePr5()
+void AlgGeom::SceneContent::clearPr5Scene()
 {
-	if (!_cloudPr5) {
-	    std::cout << "Genere primero una nube de puntos PR5." << std::endl;
-	    return;
-	}
-	
+    _isPr5Active = false;
+    _showPr5Slow = false;
+    _visibleSlow = 0;
+
+    auto it = std::remove_if(_model.begin(), _model.end(), [&](const std::unique_ptr<Model3D>& m) {
+        return m->getName().rfind("PR5_", 0) == 0;
+    });
+    _model.erase(it, _model.end());
+
+    if (_cloudPr5) { delete _cloudPr5; _cloudPr5 = nullptr; }
+    if (_chSlowModel) { delete _chSlowModel; _chSlowModel = nullptr; }
+}
+
+void AlgGeom::SceneContent::buildPr5FromModel()
+{
+    if (!_drawA_ref || _currentModelPath.empty()) return;
+
+    _isPr5Active = true;
+    _showPr5Slow = false;
+    _chSlowModel = nullptr;
+    _visibleSlow = 0;
+    _frameCounterPr5 = 0;
+
+    // Remove any previous PR5 items
+    clearPr5Scene();
+    _isPr5Active = true;
+    _pr5ModelMatrix = glm::scale(glm::mat4(1.0f), vec3(1.005f)) * _drawA_ref->getModelMatrix();
+
     std::cout << "\n============================================" << std::endl;
-    std::cout << "COMPARATIVA DE RENDIMIENTO PR5" << std::endl;
-    std::cout << "============================================" << std::endl;
-    
-    auto startSlow = std::chrono::high_resolution_clock::now();
-    std::vector<Triangle3d> chSlow = _cloudPr5->CH_GiftWrapping();
-    auto endSlow = std::chrono::high_resolution_clock::now();
-    double tiempoSlow = std::chrono::duration<double, std::milli>(endSlow - startSlow).count();
-    
-    auto startFast = std::chrono::high_resolution_clock::now();
-    std::vector<Triangle3d> chFast = _cloudPr5->CH_GiftWrapping_Fast();
-    auto endFast = std::chrono::high_resolution_clock::now();
-    double tiempoFast = std::chrono::duration<double, std::milli>(endFast - startFast).count();
+    std::cout << "PRACTICA 5: Gift Wrapping 3D - Desde Modelo Cargado" << std::endl;
 
-    std::cout << "| Metodo       | N puntos | N triangulos | Tiempo (ms) |" << std::endl;
-    std::cout << "|--------------|----------|--------------|-------------|" << std::endl;
-    std::cout << "| O(n^2)       | " << _cloudPr5->size() << "      | " << chSlow.size() << "           | " << tiempoSlow << " |" << std::endl;
-    std::cout << "| O(n) [Fast]  | " << _cloudPr5->size() << "      | " << chFast.size() << "           | " << tiempoFast << " |" << std::endl;
-    std::cout << "============================================" << std::endl;
+    TriangleModel* tm = new TriangleModel(_currentModelPath);
+    std::vector<Vect3d>* vertices = tm->getVertices();
+    
+    _cloudPr5 = new PointCloud3d(*vertices);
+    delete tm;
 
-    if (tiempoSlow > 0.0)
-    {
-        std::cout << "Speedup (Fast vs Slow): " << (tiempoSlow / tiempoFast) << "x" << std::endl;
-    }
+    std::cout << "Nube de puntos extraida con " << _cloudPr5->size() << " puntos." << std::endl;
+
+    // Calcular envolventes
+    _chSlowModel = _cloudPr5->CH_GiftWrapping();
+
+    // Ocultar el modelo original (triángulos) para evitar Z-fighting y dejar solo los puntos
+    _drawA_ref->setTopologyVisibility(AlgGeom::VAO::IBO_TRIANGLE, false);
+    _drawA_ref->setTopologyVisibility(AlgGeom::VAO::IBO_LINE, false);
+    _drawA_ref->setTopologyVisibility(AlgGeom::VAO::IBO_POINT, true);
+
+    std::cout << "============================================" << std::endl;
 }
 
 void AlgGeom::SceneContent::update_pr5()
@@ -1268,37 +1285,39 @@ void AlgGeom::SceneContent::update_pr5()
 	auto currentTime = std::chrono::steady_clock::now();
 	bool shouldDraw = false;
 	
-	if (std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastUpdate).count() >= 1000) {
+	if (std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - lastUpdate).count() >= _pr5SpeedMs) {
 	    shouldDraw = true;
 	    lastUpdate = currentTime;
 	}
+
+    // Actualizar Wireframe en todos los triangulos ya dibujados para PR5
+    for (auto& m : _model) {
+        if (m->getName() == "PR5_Triangle") {
+            m->setTopologyVisibility(AlgGeom::VAO::IBO_TRIANGLE, !_pr5Wireframe);
+            m->setTopologyVisibility(AlgGeom::VAO::IBO_LINE, _pr5Wireframe);
+        }
+    }
 	
 	// Mostrar O(n^2) triangulo a triangulo
-	if (_showPr5Slow) {
-	    // Si ha pasado 1 segundo (1000ms), mostramos uno nuevo
-	    if (shouldDraw && _visibleSlow < (int)_chSlow.size()) {
-	        this->addNewModel((new DrawTriangle3d(_chSlow[_visibleSlow]))->setTriangleColor(vec4(1.0f, 0.0f, 0.0f, 0.6f))->overrideModelName());
+	if (_showPr5Slow && _chSlowModel) {
+        auto faces = _chSlowModel->getFacesPtrs();
+	    if (shouldDraw && _visibleSlow < (int)faces.size()) {
+	        DrawTriangle3d* dt = new DrawTriangle3d(*faces[_visibleSlow]);
+            dt->setTriangleColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            dt->setName("PR5_Triangle");
+            dt->setTopologyVisibility(AlgGeom::VAO::IBO_TRIANGLE, !_pr5Wireframe);
+            dt->setTopologyVisibility(AlgGeom::VAO::IBO_LINE, _pr5Wireframe);
+            dt->setModelMatrix(_pr5ModelMatrix);
+            this->addNewModel(dt);
 	        _visibleSlow++;
 	    }
 	} else if (_visibleSlow > 0) {
 	    std::cout << "Para ver la creacion, desmarcar y volver a generar la nube!" << std::endl;
-	    // Si el usuario lo desactiva, limpiamos todo y redibujamos la nube:
-	    clearScene();
-	    this->addNewModel((new DrawPointCloud3d(*_cloudPr5))->setPointColor(vec3(0.2f, 0.6f, 1.0f))->overrideModelName()->setPointSize(5.0f));
+	    // Limpiamos los triangulos PR5
+        auto it = std::remove_if(_model.begin(), _model.end(), [&](const std::unique_ptr<Model3D>& m) {
+            return m->getName().rfind("PR5_", 0) == 0;
+        });
+        _model.erase(it, _model.end());
 	    _visibleSlow = 0;
-	    _visibleFast = 0;
-	}
-	
-	// Mostrar O(n) triangulo a triangulo
-	if (_showPr5Fast) {
-	    if (shouldDraw && _visibleFast < (int)_chFast.size()) {
-	        this->addNewModel((new DrawTriangle3d(_chFast[_visibleFast]))->setTriangleColor(vec4(0.0f, 1.0f, 0.0f, 0.6f))->overrideModelName());
-	        _visibleFast++;
-	    }
-	} else if (!_showPr5Slow && _visibleFast > 0) {
-		clearScene();
-	    this->addNewModel((new DrawPointCloud3d(*_cloudPr5))->setPointColor(vec3(0.2f, 0.6f, 1.0f))->overrideModelName()->setPointSize(5.0f));
-	    _visibleSlow = 0;
-	    _visibleFast = 0;
 	}
 }
