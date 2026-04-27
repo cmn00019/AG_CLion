@@ -480,9 +480,12 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
             ImGui::Checkbox("Wireframe", &sceneContent->_pr5Wireframe);
             ImGui::SameLine();
             ImGui::PushItemWidth(120);
-            if (ImGui::InputInt("Puntos Nube", &sceneContent->_numPointsPr5)) {
-                if (sceneContent->_numPointsPr5 < 4) sceneContent->_numPointsPr5 = 4;
-                // Si ya hay una nube aleatoria, la regeneramos al cambiar el numero
+            static int numPointsStaging = sceneContent->_numPointsPr5;
+            ImGui::InputInt("Puntos Nube", &numPointsStaging);
+            if (numPointsStaging < 4) numPointsStaging = 4;
+            ImGui::SameLine();
+            if (ImGui::Button("OK")) {
+                sceneContent->_numPointsPr5 = numPointsStaging;
                 if (sceneContent->_cloudPr5) {
                     sceneContent->generateCloudPr5();
                 }

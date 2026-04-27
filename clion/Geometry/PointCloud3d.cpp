@@ -7,8 +7,6 @@
 #include <list>
 #include <set>
 #include <map>
-#include <unordered_set>
-#include <unordered_map>
 #include <queue>
 #include <cmath>
 #include <iostream>
@@ -129,20 +127,24 @@ static Triangle3d orientarNormalHaciaAfuera(Vect3d& a, Vect3d& b, Vect3d& c, Vec
     return tri;
 }
 
-static bool trianguloYaExiste(const std::set<std::tuple<double, double, double, double, double, double, double, double, double>>& CH_cache, Vect3d& a, Vect3d& b, Vect3d& c) {
-    auto sortAndTuple = [](Vect3d p1, Vect3d p2, Vect3d p3) {
-        if (p2.getX() < p1.getX() || (p2.getX() == p1.getX() && p2.getY() < p1.getY())) std::swap(p1, p2);
-        if (p3.getX() < p2.getX() || (p3.getX() == p2.getX() && p3.getY() < p2.getY())) std::swap(p2, p3);
-        if (p2.getX() < p1.getX() || (p2.getX() == p1.getX() && p2.getY() < p1.getY())) std::swap(p1, p2);
-        return std::make_tuple(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), p3.getX(), p3.getY(), p3.getZ());
-    };
-    return CH_cache.count(sortAndTuple(a, b, c)) > 0;
+// Ordena 3 índices para usarlos como clave única de un triángulo
+static std::tuple<int,int,int> sortTriIdx(int a, int b, int c) {
+    if (a > b) std::swap(a, b);
+    if (b > c) std::swap(b, c);
+    if (a > b) std::swap(a, b);
+    return std::make_tuple(a, b, c);
+}
+
+// Busca el índice del punto más cercano a 'target' en el vector 'pts'
+static int buscarIndice(const std::vector<Vect3d>& pts, Vect3d& target) {
+    for (int i = 0; i < (int)pts.size(); i++) if (pts[i] == target) return i;
+    return -1;
 }
 
 TriangleModel* PointCloud3d::CH_GiftWrapping() {
     int nOrig = (int)_points.size(); if (nOrig < 4) return nullptr;
 
-    // Deduplicación calcada del O(n) para evitar crasheos con vértices dobles (ej. Ajax)
+    // Deduplicación para evitar crasheos con vértices dobles (ej. Ajax)
     std::map<std::tuple<double,double,double>, int> coordMap;
     std::vector<Vect3d> pts;
     for (int i = 0; i < nOrig; i++) {
@@ -182,40 +184,37 @@ TriangleModel* PointCloud3d::CH_GiftWrapping() {
     }
     if (idxC == -1) return nullptr;
     std::list<Segment3d> Boundary; std::vector<Vect3d> PointsIn;
-    std::set<std::tuple<double, double, double, double, double, double, double, double, double>> CH_cache;
     
-    auto addTriToCache = [&CH_cache](Vect3d p1, Vect3d p2, Vect3d p3) {
-        if (p2.getX() < p1.getX() || (p2.getX() == p1.getX() && p2.getY() < p1.getY())) std::swap(p1, p2);
-        if (p3.getX() < p2.getX() || (p3.getX() == p2.getX() && p3.getY() < p2.getY())) std::swap(p2, p3);
-        if (p2.getX() < p1.getX() || (p2.getX() == p1.getX() && p2.getY() < p1.getY())) std::swap(p1, p2);
-        CH_cache.insert(std::make_tuple(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), p3.getX(), p3.getY(), p3.getZ()));
-    };
+    // Caché de triángulos usando índices enteros (limpio y eficiente)
+    std::set<std::tuple<int, int, int>> triCache;
+    triCache.insert(sortTriIdx(idxA, idxB, idxC));
 
     Triangle3d first = orientarNormalHaciaAfuera(A, B, pts[idxC], centroide);
     CH.push_back(first);
-    addTriToCache(first.getA(), first.getB(), first.getC());
     Boundary.push_back(Segment3d(first.getA(), first.getB())); Boundary.push_back(Segment3d(first.getB(), first.getC())); Boundary.push_back(Segment3d(first.getC(), first.getA()));
     PointsIn.push_back(first.getA()); PointsIn.push_back(first.getB()); PointsIn.push_back(first.getC());
     int iter = 0;
     while (!Boundary.empty()) {
         iter++;
-        if (iter % 10 == 0) std::cout << "[DEBUG LENTO] Iter: " << iter << " | Frontera: " << Boundary.size() << " | Triángulos: " << CH.size() << std::endl;
+        if (iter % 10 == 0) std::cout << "[DEBUG LENTO] Iter: " << iter << " | Frontera: " << Boundary.size() << " | Triangulos: " << CH.size() << std::endl;
         Segment3d seg = Boundary.front(); Boundary.pop_front(); Vect3d D = seg.getOrigin(), E = seg.getDestination();
+        int idxD = buscarIndice(pts, D), idxE = buscarIndice(pts, E);
         int idxV = -1;
         
-        Vect3d eV = E.sub(D); // Optimización: calcular fuera del bucle
+        Vect3d eV = E.sub(D);
         
         for (int i = 0; i < n; i++) {
-            if (pts[i] == D || pts[i] == E || trianguloYaExiste(CH_cache, D, E, pts[i])) continue;
+            if (i == idxD || i == idxE) continue;
+            if (triCache.count(sortTriIdx(idxD, idxE, i))) continue;
             
             Vect3d diff = pts[i].sub(D);
             Vect3d nC = eV.xProduct(diff);
             double modSq = nC.dot(nC);
-            if (modSq < 1e-18) continue; // Colineales
-            nC = nC.scalarMul(1.0 / std::sqrt(modSq)); // Normalizar para mantener la tolerancia 1e-6
+            if (modSq < 1e-18) continue;
+            nC = nC.scalarMul(1.0 / std::sqrt(modSq));
             
             double dD = nC.dot(D);
-            double nx = nC.getX(), ny = nC.getY(), nz = nC.getZ(); // Inlining para evitar overhead en Debug
+            double nx = nC.getX(), ny = nC.getY(), nz = nC.getZ();
             
             bool allOnSide = true; int side = 0;
             for (int j = 0; j < n; j++) {
@@ -231,7 +230,7 @@ TriangleModel* PointCloud3d::CH_GiftWrapping() {
         Vect3d V = pts[idxV]; 
         Triangle3d newTri = orientarNormalHaciaAfuera(D, E, V, centroide);
         CH.push_back(newTri);
-        addTriToCache(newTri.getA(), newTri.getB(), newTri.getC());
+        triCache.insert(sortTriIdx(idxD, idxE, idxV));
         
         Segment3d aDV(D, V), aEV(E, V);
         if (!puntoEnConjunto(PointsIn, V)) { PointsIn.push_back(V); Boundary.push_back(aDV); Boundary.push_back(aEV); }
@@ -306,45 +305,24 @@ TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
     Vect3d expN = pts[idxB].sub(pts[idxA]).xProduct(pts[idxC].sub(pts[idxA]));
     if (first.normal().dot(expN) < 0) { std::swap(va, vb); }
 
-    // --- Hash functions para O(1) en vez de O(log n) ---
-    struct PairHash {
-        size_t operator()(const std::pair<int,int>& p) const {
-            return std::hash<long long>()(((long long)p.first << 32) | (unsigned int)p.second);
-        }
-    };
-    struct TriHash {
-        size_t operator()(const std::tuple<int,int,int>& t) const {
-            size_t h = std::hash<int>()(std::get<0>(t));
-            h ^= std::hash<int>()(std::get<1>(t)) * 2654435761u;
-            h ^= std::hash<int>()(std::get<2>(t)) * 40503u;
-            return h;
-        }
-    };
-
-    // --- Frontera y mapa de vértices opuestos (O(1) amortizado) ---
-    std::unordered_set<std::pair<int, int>, PairHash> Boundary;
+    // --- Frontera y mapa de vértices opuestos ---
+    std::set<std::pair<int, int>> Boundary;
     auto addE = [&](int u, int v) { if (Boundary.count({v, u})) Boundary.erase({v, u}); else Boundary.insert({u, v}); };
     addE(va, vb); addE(vb, vc); addE(vc, va);
     
     auto getK = [](int u, int v) { return u < v ? std::make_pair(u, v) : std::make_pair(v, u); };
-    std::unordered_map<std::pair<int, int>, int, PairHash> opV; 
+    std::map<std::pair<int, int>, int> opV; 
     opV[getK(va, vb)] = vc; opV[getK(vb, vc)] = va; opV[getK(vc, va)] = vb;
 
-    // --- Caché de triángulos con índices enteros (O(1) amortizado) ---
-    auto sortTri = [](int a, int b, int c) -> std::tuple<int,int,int> {
-        if (a > b) std::swap(a, b);
-        if (b > c) std::swap(b, c);
-        if (a > b) std::swap(a, b);
-        return {a, b, c};
-    };
-    std::unordered_set<std::tuple<int,int,int>, TriHash> triCache;
-    triCache.insert(sortTri(va, vb, vc));
+    // --- Caché de triángulos con índices enteros ---
+    std::set<std::tuple<int,int,int>> triCache;
+    triCache.insert(sortTriIdx(va, vb, vc));
 
-    // --- Bucle principal: O(T * n) ---
+    // --- Bucle principal ---
     int iter = 0;
     while (!Boundary.empty()) {
         iter++;
-        if (iter % 100 == 0) std::cout << "[DEBUG] Iter: " << iter << " | Frontera: " << Boundary.size() << std::endl;
+        if (iter % 100 == 0) std::cout << "[DEBUG OPT] Iter: " << iter << " | Frontera: " << Boundary.size() << std::endl;
         
         auto edgeIt = Boundary.begin();
         int D_idx = edgeIt->first, E_idx = edgeIt->second;
@@ -364,7 +342,7 @@ TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
 
         for (int i = 0; i < n; i++) {
             if (i == D_idx || i == E_idx || i == idxP) continue;
-            if (triCache.count(sortTri(D_idx, E_idx, i))) continue;
+            if (triCache.count(sortTriIdx(D_idx, E_idx, i))) continue;
             if (Boundary.count({D_idx, i}) || Boundary.count({i, E_idx})) continue;
             
             Vect3d diff = pts[i].sub(D);
@@ -384,7 +362,7 @@ TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
         if (best != -1) {
             Triangle3d newTri(pts[E_idx], pts[D_idx], pts[best]);
             CH.push_back(newTri); 
-            triCache.insert(sortTri(D_idx, E_idx, best));
+            triCache.insert(sortTriIdx(D_idx, E_idx, best));
             addE(D_idx, best); addE(best, E_idx);
             opV[getK(D_idx, best)] = E_idx; 
             opV[getK(best, E_idx)] = D_idx;

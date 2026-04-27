@@ -1337,7 +1337,8 @@ void AlgGeom::SceneContent::update_pr5()
         auto faces = _chSlowModel->getFacesPtrs();
 	    if (shouldDraw && _visibleSlow < (int)faces.size()) {
 	        DrawTriangle3d* dt = new DrawTriangle3d(*faces[_visibleSlow]);
-            dt->setTriangleColor(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            dt->setTriangleColor(vec4(0.0f, 0.8f, 0.0f, 1.0f));
+            dt->setLineColor(vec3(0.0f, 1.0f, 0.0f));
             dt->setName("PR5_Triangle");
             dt->setTopologyVisibility(AlgGeom::VAO::IBO_TRIANGLE, !_pr5Wireframe);
             dt->setTopologyVisibility(AlgGeom::VAO::IBO_LINE, _pr5Wireframe);
