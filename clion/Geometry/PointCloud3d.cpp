@@ -140,25 +140,40 @@ static bool trianguloYaExiste(const std::set<std::tuple<double, double, double, 
 }
 
 TriangleModel* PointCloud3d::CH_GiftWrapping() {
-    std::vector<Triangle3d> CH; int n = (int)_points.size(); if (n < 4) return nullptr;
-    Vect3d centroide(0, 0, 0); for (auto& p : _points) centroide = centroide.add(p); centroide = centroide.scalarMul(1.0 / n);
+    int nOrig = (int)_points.size(); if (nOrig < 4) return nullptr;
+
+    // Deduplicación calcada del O(n) para evitar crasheos con vértices dobles (ej. Ajax)
+    std::map<std::tuple<double,double,double>, int> coordMap;
+    std::vector<Vect3d> pts;
+    for (int i = 0; i < nOrig; i++) {
+        auto key = std::make_tuple(_points[i].getX(), _points[i].getY(), _points[i].getZ());
+        if (coordMap.find(key) == coordMap.end()) {
+            coordMap[key] = (int)pts.size();
+            pts.push_back(_points[i]);
+        }
+    }
+    int n = (int)pts.size();
+    if (n < 4) return nullptr;
+
+    std::vector<Triangle3d> CH;
+    Vect3d centroide(0, 0, 0); for (auto& p : pts) centroide = centroide.add(p); centroide = centroide.scalarMul(1.0 / n);
     int idxA = 0;
-    for (int i = 1; i < n; i++) if (_points[i].getY() < _points[idxA].getY() || (_points[i].getY() == _points[idxA].getY() && _points[i].getX() < _points[idxA].getX())) idxA = i;
-    Vect3d A = _points[idxA];
+    for (int i = 1; i < n; i++) if (pts[i].getY() < pts[idxA].getY() || (pts[i].getY() == pts[idxA].getY() && pts[i].getX() < pts[idxA].getX())) idxA = i;
+    Vect3d A = pts[idxA];
     int idxB = -1; double minAngle = 1e18;
     for (int i = 0; i < n; i++) {
         if (i == idxA) continue;
-        double dx = _points[i].getX() - A.getX(), dy = _points[i].getY() - A.getY(), angle = std::atan2(dy, dx);
+        double dx = pts[i].getX() - A.getX(), dy = pts[i].getY() - A.getY(), angle = std::atan2(dy, dx);
         if (angle < minAngle) { minAngle = angle; idxB = i; }
     }
-    Vect3d B = _points[idxB];
+    Vect3d B = pts[idxB];
     int idxC = -1;
     for (int i = 0; i < n; i++) {
         if (i == idxA || i == idxB) continue;
-        Triangle3d tri(A, B, _points[i]); bool allOnSide = true; int side = 0;
+        Triangle3d tri(A, B, pts[i]); bool allOnSide = true; int side = 0;
         for (int j = 0; j < n; j++) {
             if (j == idxA || j == idxB || j == i) continue;
-            double d = tri.normal().dot(_points[j].sub(A));
+            double d = tri.normal().dot(pts[j].sub(A));
             if (std::abs(d) < 1e-6) continue;
             int s = (d > 0) ? 1 : -1;
             if (side == 0) side = s; else if (side != s) { allOnSide = false; break; }
@@ -176,7 +191,7 @@ TriangleModel* PointCloud3d::CH_GiftWrapping() {
         CH_cache.insert(std::make_tuple(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), p3.getX(), p3.getY(), p3.getZ()));
     };
 
-    Triangle3d first = orientarNormalHaciaAfuera(A, B, _points[idxC], centroide);
+    Triangle3d first = orientarNormalHaciaAfuera(A, B, pts[idxC], centroide);
     CH.push_back(first);
     addTriToCache(first.getA(), first.getB(), first.getC());
     Boundary.push_back(Segment3d(first.getA(), first.getB())); Boundary.push_back(Segment3d(first.getB(), first.getC())); Boundary.push_back(Segment3d(first.getC(), first.getA()));
@@ -187,18 +202,25 @@ TriangleModel* PointCloud3d::CH_GiftWrapping() {
         if (iter % 10 == 0) std::cout << "[DEBUG LENTO] Iter: " << iter << " | Frontera: " << Boundary.size() << " | Triángulos: " << CH.size() << std::endl;
         Segment3d seg = Boundary.front(); Boundary.pop_front(); Vect3d D = seg.getOrigin(), E = seg.getDestination();
         int idxV = -1;
+        
+        Vect3d eV = E.sub(D); // Optimización: calcular fuera del bucle
+        
         for (int i = 0; i < n; i++) {
-            if (_points[i] == D || _points[i] == E || trianguloYaExiste(CH_cache, D, E, _points[i])) continue;
-            Vect3d nC = E.sub(D).xProduct(_points[i].sub(D));
+            if (pts[i] == D || pts[i] == E || trianguloYaExiste(CH_cache, D, E, pts[i])) continue;
+            
+            Vect3d diff = pts[i].sub(D);
+            Vect3d nC = eV.xProduct(diff);
             double modSq = nC.dot(nC);
             if (modSq < 1e-18) continue; // Colineales
             nC = nC.scalarMul(1.0 / std::sqrt(modSq)); // Normalizar para mantener la tolerancia 1e-6
             
             double dD = nC.dot(D);
+            double nx = nC.getX(), ny = nC.getY(), nz = nC.getZ(); // Inlining para evitar overhead en Debug
+            
             bool allOnSide = true; int side = 0;
             for (int j = 0; j < n; j++) {
                 if (j == i) continue;
-                double d = nC.dot(_points[j]) - dD;
+                double d = (nx * pts[j].getX() + ny * pts[j].getY() + nz * pts[j].getZ()) - dD;
                 if (std::abs(d) < 1e-6) continue;
                 int s = (d > 0) ? 1 : -1;
                 if (side == 0) side = s; else if (side != s) { allOnSide = false; break; }
@@ -206,7 +228,7 @@ TriangleModel* PointCloud3d::CH_GiftWrapping() {
             if (allOnSide && side != 0) { idxV = i; break; }
         }
         if (idxV == -1) continue;
-        Vect3d V = _points[idxV]; 
+        Vect3d V = pts[idxV]; 
         Triangle3d newTri = orientarNormalHaciaAfuera(D, E, V, centroide);
         CH.push_back(newTri);
         addTriToCache(newTri.getA(), newTri.getB(), newTri.getC());
