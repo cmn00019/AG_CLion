@@ -456,9 +456,9 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 		}
 
 		ImGui::SameLine();
-		if (ImGui::Button("Limpiar PR5"))
+		if (ImGui::Button("Limpiar Escena"))
 		{
-			sceneContent->clearPr5Scene();
+			sceneContent->clearScene();
 			_modelCompSelected = nullptr;
 		}
 

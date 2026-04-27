@@ -41,6 +41,8 @@ void AlgGeom::SceneContent::clearScene()
     _pr4_boxesA = nullptr;
     _pr4_boxesB = nullptr;
     _isPr4Active = false;
+    
+    clearPr5Scene();
 }
 
 void AlgGeom::SceneContent::buildScenario()
