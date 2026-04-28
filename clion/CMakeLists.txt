@@ -9,6 +9,9 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
 endif()
 
+# Buscar CGAL y sus dependencias obligatorias (GMP, MPFR)
+find_package(CGAL REQUIRED)
+
 set(FONTS ./Fonts)
 set(GEOMETRY ./Geometry)
 set(LIBRARIES ../Libraries)
@@ -90,6 +93,8 @@ set(SOURCE_FILES
         ${GEOMETRY}/Vect3d.h
         ${GEOMETRY}/Voxelization.cpp
         ${GEOMETRY}/Voxelization.h
+        ${GEOMETRY}/TDelaunay.cpp
+        ${GEOMETRY}/TDelaunay.h
         ${PATTERNS}/Singleton.h
         ${PRECOMPILED_HEADERS}/InclDraw2D.h
         ${PRECOMPILED_HEADERS}/InclGeom2D.h
@@ -140,6 +145,8 @@ set(SOURCE_FILES
         ${RENDERING}/DrawOctree.h
         ${RENDERING}/DrawVoxelization.cpp
         ${RENDERING}/DrawVoxelization.h
+        ${RENDERING}/DrawTDelaunay.cpp
+        ${RENDERING}/DrawTDelaunay.h
         ${RENDERING}/FBO.cpp
         ${RENDERING}/FBO.h
         ${RENDERING}/FBOScreenshot.cpp
@@ -183,38 +190,43 @@ set(SOURCE_FILES
         ${FONTS}/font_awesome.hpp
         ${FONTS}/font_awesome.cpp
         ${FONTS}/font_awesome_2.cpp)
+
 add_executable(AG_CLion ${SOURCE_FILES})
 
-target_link_libraries(AG_CLion imgui imguizmo glfw3dll glew32 OpenGL32 assimp-vc143-mt)
+# Añadimos CGAL::CGAL a tus librerías enlazadas
+target_link_libraries(AG_CLion CGAL::CGAL imgui imguizmo glfw3dll glew32 OpenGL32 assimp-vc143-mt)
 
 if (WIN32)
     set(VCPKG_BIN "${VCPKG}/bin")
 
+    # Añadidas gmp.dll y mpfr.dll para evitar errores de ejecución en Windows
     file(GLOB RUNTIME_DLLS
-        "${VCPKG_BIN}/glew32.dll"
-        "${VCPKG_BIN}/glfw3.dll"
-        "${VCPKG_BIN}/assimp-vc143-mt.dll"
-        "${VCPKG_BIN}/zlib1.dll"
-        "${VCPKG_BIN}/poly2tri.dll"
-        "${VCPKG_BIN}/minizip.dll"
-        "${VCPKG_BIN}/pugixml.dll"
-        "${VCPKG_BIN}/kubazip.dll"
+            "${VCPKG_BIN}/glew32.dll"
+            "${VCPKG_BIN}/glfw3.dll"
+            "${VCPKG_BIN}/assimp-vc143-mt.dll"
+            "${VCPKG_BIN}/zlib1.dll"
+            "${VCPKG_BIN}/poly2tri.dll"
+            "${VCPKG_BIN}/minizip.dll"
+            "${VCPKG_BIN}/pugixml.dll"
+            "${VCPKG_BIN}/kubazip.dll"
+            "${VCPKG_BIN}/gmp.dll"
+            "${VCPKG_BIN}/mpfr.dll"
     )
 
     add_custom_command(TARGET AG_CLion POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${RUNTIME_DLLS}
-        $<TARGET_FILE_DIR:AG_CLion>
-        COMMAND_EXPAND_LISTS
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${RUNTIME_DLLS}
+            $<TARGET_FILE_DIR:AG_CLion>
+            COMMAND_EXPAND_LISTS
     )
 
     # Assets
     set(ASSETS_DIR "${CMAKE_SOURCE_DIR}/../vs/Source/Assets")
     if (EXISTS "${ASSETS_DIR}")
         add_custom_command(TARGET AG_CLion POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${ASSETS_DIR}"
-            "$<TARGET_FILE_DIR:AG_CLion>/Assets"
+                COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${ASSETS_DIR}"
+                "$<TARGET_FILE_DIR:AG_CLion>/Assets"
         )
     endif()
 endif()

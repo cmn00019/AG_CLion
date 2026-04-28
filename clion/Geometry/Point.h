@@ -79,12 +79,12 @@ public:
 	/**
 	*	@return X coordinate.
 	*/
-	double getX() { return _x; }
+	double getX() const { return _x; }
 
 	/**
 	*	@return Y coordinate.
 	*/
-	double getY() { return _y; }
+	double getY() const { return _y; }
 
 	/**
 	*	@brief Angle of this point interpreted as a polar coordinate (radians).

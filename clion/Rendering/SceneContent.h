@@ -67,6 +67,7 @@ namespace AlgGeom
 		void buildPr2d();
 		void buildPr3a();
 		void buildPr4();
+		void buildDelaunay();
 		void generateCloudPr5();
 		void extractCloudFromModel();
 		void runCH_Lento();

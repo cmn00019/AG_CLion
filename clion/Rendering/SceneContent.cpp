@@ -17,6 +17,8 @@
 #include "TriangleModel.h"
 #include "NodeOctree.h"
 #include <unordered_set>
+#include "TDelaunay.h"
+#include "DrawTDelaunay.h"
 
 
 // ----------------------------- BUILD YOUR SCENARIO HERE -----------------------------------
@@ -1310,6 +1312,55 @@ void AlgGeom::SceneContent::clearPr5Scene()
 }
 
 
+
+// ============================== DELAUNAY ==============================
+
+void AlgGeom::SceneContent::buildDelaunay()
+{
+    std::cout << "\n============================================" << std::endl;
+    std::cout << "PRACTICA DELAUNAY - Nube de 100 puntos 2D" << std::endl;
+    std::cout << "============================================" << std::endl;
+
+    // 1. Generar nube de 100 puntos aleatorios en 2D
+    PointCloud cloud;
+    float radioNube = 5.0f;
+    for (int i = 0; i < 100; i++)
+    {
+        vec3 p = RandomUtilities::getUniformRandomInUnitDisk();
+        cloud.addPoint(Point(p.x * radioNube, p.y * radioNube));
+    }
+
+    std::cout << "Nube generada con " << cloud.size() << " puntos." << std::endl;
+
+    // 2. Construir triangulacion de Delaunay
+    TDelaunay dt(cloud);
+    std::cout << "Triangulacion de Delaunay construida." << std::endl;
+    std::cout << "Numero de vertices: " << dt.numberOfVertices() << std::endl;
+    std::cout << "Numero de triangulos finitos: " << dt.getTriangles().size() << std::endl;
+
+    // 3. Dibujar
+    DrawTDelaunay* drawDt = new DrawTDelaunay(dt, true, true, true);
+    drawDt->overrideModelName()->setTriangleColor(vec4(0.5f, 0.8f, 1.0f, 0.3f));
+    this->addNewModel(drawDt);
+
+    // 4. Mostrar informacion de envolvente convexa
+    auto hull = dt.getConvexHull();
+    std::cout << "Envolvente convexa: " << hull.size() << " puntos." << std::endl;
+
+    // 5. Mostrar informacion de Voronoi
+    auto vEdges = dt.getVoronoiEdges();
+    int nSegments = 0, nRays = 0;
+    for (const auto& e : vEdges)
+    {
+        if (e.isSegment) nSegments++;
+        else nRays++;
+    }
+    std::cout << "Diagrama de Voronoi: " << nSegments << " aristas finitas, " << nRays << " rayos." << std::endl;
+
+    std::cout << "============================================" << std::endl;
+}
+
+// ============================== PRACTICA 5 ==============================
 
 void AlgGeom::SceneContent::update_pr5()
 {

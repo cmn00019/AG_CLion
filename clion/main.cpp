@@ -1,29 +1,50 @@
 #include "stdafx.h"
-
-#include "Renderer.h"
 #include "Window.h"
+
+// ========================================================================
+// Ejemplo terrain.cpp (ya funcionando anteriormente en consola)
+// Se conserva aqui como referencia del ejercicio explicado en clase.
+// ========================================================================
+/*
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Projection_traits_xy_3.h>
+#include <CGAL/Delaunay_triangulation_2.h>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+
+typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+typedef CGAL::Projection_traits_xy_3<K>  Gt;
+typedef CGAL::Delaunay_triangulation_2<Gt> Delaunay;
+typedef K::Point_3   Point;
+
+void terrainExample()
+{
+    std::ifstream in("terrain.cin");
+    if (!in.is_open()) {
+        std::cerr << "No se ha podido encontrar terrain.cin!" << std::endl;
+        return;
+    }
+    std::istream_iterator<Point> begin(in);
+    std::istream_iterator<Point> end;
+    Delaunay dt(begin, end);
+    std::cout << "Vertices terrain: " << dt.number_of_vertices() << std::endl;
+}
+*/
 
 int main()
 {
-    AlgGeom::Window* window = AlgGeom::Window::getInstance();
-    AlgGeom::Renderer* renderer = AlgGeom::Renderer::getInstance();
-
     try
     {
-        window->init("Algoritmos Geometricos");
+        AlgGeom::Window* window = AlgGeom::Window::getInstance();
+        window->init("Algoritmos Geometricos - Delaunay", 1280, 720);
         window->loop();
     }
-    catch (const std::exception& exception)
+    catch (const std::exception& e)
     {
-        std::cout << exception.what() << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
+        return -1;
     }
 
-    // - Una vez terminado el ciclo de eventos, liberar recursos, etc.
-    std::cout << "Finishing application..." << std::endl;
-
-    // - Esta llamada es para impedir que la consola se cierre inmediatamente tras la
-    // ejecución y poder leer los mensajes. Se puede usar también getChar();
-    system("pause");
+    return 0;
 }
-
-

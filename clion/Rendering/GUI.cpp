@@ -388,6 +388,14 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			_modelCompSelected = nullptr;
 		}
 
+		ImGui::SameLine();
+		if (ImGui::Button("Delaunay"))
+		{
+			sceneContent->clearScene();
+			sceneContent->buildDelaunay();
+			_modelCompSelected = nullptr;
+		}
+
 		static bool showOctreeWhite = true;
 		static bool showOctreeGrey = true;
 		static bool showOctreeBlack = true;

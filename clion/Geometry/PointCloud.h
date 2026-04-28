@@ -64,7 +64,7 @@ public:
 	/**
 	*	@brief Returns all the available points as a vector.
 	*/
-	std::vector<Point> getPoints() { return _points; }
+	std::vector<Point> getPoints() const { return _points; }
 
 	/**
 	*	@brief Assignment operator.
