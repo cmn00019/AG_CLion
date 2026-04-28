@@ -1252,7 +1252,7 @@ void AlgGeom::SceneContent::runCH_Lento()
     });
     _model.erase(it, _model.end());
 
-    std::cout << "\n>>> Ejecutando Gift Wrapping Lento (O(n^2))..." << std::endl;
+    std::cout << "\n>>> Ejecutando Gift Wrapping (O(n^2))..." << std::endl;
     
     auto start = std::chrono::high_resolution_clock::now();
     
@@ -1262,7 +1262,7 @@ void AlgGeom::SceneContent::runCH_Lento()
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     
-    std::cout << "[RESULTADO] Tiempo de ejecucion Lento: " << elapsed.count() << " s" << std::endl;
+    std::cout << "[RESULTADO] Tiempo de ejecucion: " << elapsed.count() << " s" << std::endl;
     
     _visibleSlow = 0;
     _showPr5Slow = true;

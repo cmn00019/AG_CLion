@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include "BasicGeometry.h"
 #include "PointCloud3d.h"
 #include "Triangle3d.h"
 #include "Segment3d.h"
@@ -7,7 +6,6 @@
 #include <list>
 #include <set>
 #include <map>
-#include <queue>
 #include <cmath>
 #include <iostream>
 #include <chrono>
@@ -144,7 +142,7 @@ static int buscarIndice(const std::vector<Vect3d>& pts, Vect3d& target) {
 TriangleModel* PointCloud3d::CH_GiftWrapping() {
     int nOrig = (int)_points.size(); if (nOrig < 4) return nullptr;
 
-    // Deduplicación para evitar crasheos con vértices dobles (ej. Ajax)
+    // Deduplicación para evitar  con vértices dobles
     std::map<std::tuple<double,double,double>, int> coordMap;
     std::vector<Vect3d> pts;
     for (int i = 0; i < nOrig; i++) {
@@ -196,7 +194,7 @@ TriangleModel* PointCloud3d::CH_GiftWrapping() {
     int iter = 0;
     while (!Boundary.empty()) {
         iter++;
-        if (iter % 10 == 0) std::cout << "[DEBUG LENTO] Iter: " << iter << " | Frontera: " << Boundary.size() << " | Triangulos: " << CH.size() << std::endl;
+        //if (iter % 10 == 0) std::cout << "[DEBUG LENTO] Iter: " << iter << " | Frontera: " << Boundary.size() << " | Triangulos: " << CH.size() << std::endl;
         Segment3d seg = Boundary.front(); Boundary.pop_front(); Vect3d D = seg.getOrigin(), E = seg.getDestination();
         int idxD = buscarIndice(pts, D), idxE = buscarIndice(pts, E);
         int idxV = -1;
@@ -235,13 +233,14 @@ TriangleModel* PointCloud3d::CH_GiftWrapping() {
             if (existeEnFrontera(Boundary, aEV)) buscarYEliminar(Boundary, aEV); else Boundary.push_back(aEV);
         }
     }
+    std::cout << "Envolvente O(n^2): " << CH.size() << " triangulos." << std::endl;
     return new TriangleModel(CH);
 }
 
 TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
     int nOrig = (int)_points.size(); if (nOrig < 4) return nullptr;
 
-    // --- Paso 0: Deduplicar puntos (modelos 3D tienen vértices repetidos) ---
+    // Deduplicar puntos (modelos 3D tienen vértices repetidos)
     std::map<std::tuple<double,double,double>, int> coordMap;
     std::vector<Vect3d> pts;
     for (int i = 0; i < nOrig; i++) {
@@ -259,7 +258,7 @@ TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
     for (const auto& p : pts) centroide = centroide.add(p);
     centroide = centroide.scalarMul(1.0 / n);
 
-    // --- Buscar primer triángulo ---
+    // Buscar primer triángulo
     int idxA = 0;
     for (int i = 1; i < n; i++) if (pts[i].getY() < pts[idxA].getY() || (pts[i].getY() == pts[idxA].getY() && pts[i].getX() < pts[idxA].getX())) idxA = i;
     int idxB = -1;
@@ -305,7 +304,7 @@ TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
     std::vector<double> px(n), py(n), pz(n);
     for (int i = 0; i < n; i++) { px[i] = pts[i].getX(); py[i] = pts[i].getY(); pz[i] = pts[i].getZ(); }
 
-    // --- Frontera y mapa de vértices opuestos ---
+    // Frontera y mapa de vértices opuestos
     std::set<std::pair<int, int>> Boundary;
     auto addE = [&](int u, int v) { if (Boundary.count({v, u})) Boundary.erase({v, u}); else Boundary.insert({u, v}); };
     addE(va, vb); addE(vb, vc); addE(vc, va);
@@ -315,11 +314,11 @@ TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
     opV[getK(va, vb)] = vc; opV[getK(vb, vc)] = va; opV[getK(vc, va)] = vb;
 
 
-    // --- Bucle principal ---
+    // Bucle principal
     int iter = 0;
     while (!Boundary.empty()) {
         iter++;
-        if (iter % 100 == 0) std::cout << "[DEBUG OPT] Iter: " << iter << " | Frontera: " << Boundary.size() << std::endl;
+        //if (iter % 100 == 0) std::cout << "[DEBUG OPT] Iter: " << iter << " | Frontera: " << Boundary.size() << std::endl;
         
         auto edgeIt = Boundary.begin();
         int D_idx = edgeIt->first, E_idx = edgeIt->second;
@@ -372,7 +371,7 @@ TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
             opV[getK(best, E_idx)] = D_idx;
         }
     }
-    std::cout << "Envolvente OPTIMIZADA: " << CH.size() << " triangulos." << std::endl;
+    std::cout << "Envolvente O(n): " << CH.size() << " triangulos." << std::endl;
     return new TriangleModel(CH);
 }
 
