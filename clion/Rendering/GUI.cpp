@@ -479,18 +479,10 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
             ImGui::Text("Filtros Pr5:");
             ImGui::Checkbox("Wireframe", &sceneContent->_pr5Wireframe);
             ImGui::SameLine();
-            ImGui::PushItemWidth(120);
-            static int numPointsStaging = sceneContent->_numPointsPr5;
-            ImGui::InputInt("Puntos Nube", &numPointsStaging);
-            if (numPointsStaging < 4) numPointsStaging = 4;
-            ImGui::SameLine();
-            if (ImGui::Button("OK")) {
-                sceneContent->_numPointsPr5 = numPointsStaging;
-                if (sceneContent->_cloudPr5) {
-                    sceneContent->generateCloudPr5();
-                }
+            ImGui::PushItemWidth(200);
+            if (ImGui::SliderInt("Puntos Nube", &sceneContent->_numPointsPr5, 10, 10000)) {
+                sceneContent->generateCloudPr5();
             }
-            ImGui::SameLine();
             ImGui::SliderInt("Velocidad (ms)", &sceneContent->_pr5SpeedMs, 50, 2000);
             ImGui::PopItemWidth();
             ImGui::Separator();

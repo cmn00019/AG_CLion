@@ -201,25 +201,21 @@ TriangleModel* PointCloud3d::CH_GiftWrapping() {
         int idxD = buscarIndice(pts, D), idxE = buscarIndice(pts, E);
         int idxV = -1;
         
-        Vect3d eV = E.sub(D);
-        
         for (int i = 0; i < n; i++) {
             if (i == idxD || i == idxE) continue;
             if (triCache.count(sortTriIdx(idxD, idxE, i))) continue;
             
-            Vect3d diff = pts[i].sub(D);
-            Vect3d nC = eV.xProduct(diff);
+            Vect3d nC = E.sub(D).xProduct(pts[i].sub(D));
             double modSq = nC.dot(nC);
             if (modSq < 1e-18) continue;
             nC = nC.scalarMul(1.0 / std::sqrt(modSq));
             
             double dD = nC.dot(D);
-            double nx = nC.getX(), ny = nC.getY(), nz = nC.getZ();
             
             bool allOnSide = true; int side = 0;
             for (int j = 0; j < n; j++) {
                 if (j == i) continue;
-                double d = (nx * pts[j].getX() + ny * pts[j].getY() + nz * pts[j].getZ()) - dD;
+                double d = nC.dot(pts[j]) - dD;
                 if (std::abs(d) < 1e-6) continue;
                 int s = (d > 0) ? 1 : -1;
                 if (side == 0) side = s; else if (side != s) { allOnSide = false; break; }
@@ -305,6 +301,10 @@ TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
     Vect3d expN = pts[idxB].sub(pts[idxA]).xProduct(pts[idxC].sub(pts[idxA]));
     if (first.normal().dot(expN) < 0) { std::swap(va, vb); }
 
+    // Pre-extraer coordenadas en arrays planos para acceso directo sin getX/Y/Z()
+    std::vector<double> px(n), py(n), pz(n);
+    for (int i = 0; i < n; i++) { px[i] = pts[i].getX(); py[i] = pts[i].getY(); pz[i] = pts[i].getZ(); }
+
     // --- Frontera y mapa de vértices opuestos ---
     std::set<std::pair<int, int>> Boundary;
     auto addE = [&](int u, int v) { if (Boundary.count({v, u})) Boundary.erase({v, u}); else Boundary.insert({u, v}); };
@@ -314,9 +314,6 @@ TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
     std::map<std::pair<int, int>, int> opV; 
     opV[getK(va, vb)] = vc; opV[getK(vb, vc)] = va; opV[getK(vc, va)] = vb;
 
-    // --- Caché de triángulos con índices enteros ---
-    std::set<std::tuple<int,int,int>> triCache;
-    triCache.insert(sortTriIdx(va, vb, vc));
 
     // --- Bucle principal ---
     int iter = 0;
@@ -337,20 +334,28 @@ TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
         Vect3d nB = eV.xProduct(vPD);
         Vect3d yA = eV.xProduct(nB);
         
+        // Extraer componentes para evitar llamadas a getX/Y/Z en el bucle
+        double Dx = px[D_idx], Dy = py[D_idx], Dz = pz[D_idx];
+        double evx = eV.getX(), evy = eV.getY(), evz = eV.getZ();
+        double nbx = nB.getX(), nby = nB.getY(), nbz = nB.getZ();
+        double yax = yA.getX(), yay = yA.getY(), yaz = yA.getZ();
+        
         int best = -1;
         double minAngle = 1e18;
 
         for (int i = 0; i < n; i++) {
             if (i == D_idx || i == E_idx || i == idxP) continue;
-            if (triCache.count(sortTriIdx(D_idx, E_idx, i))) continue;
-            if (Boundary.count({D_idx, i}) || Boundary.count({i, E_idx})) continue;
             
-            Vect3d diff = pts[i].sub(D);
-            Vect3d n_new = diff.xProduct(eV);
-            double modSq = n_new.dot(n_new);
+            double dx = px[i] - Dx, dy = py[i] - Dy, dz = pz[i] - Dz;
+            // Producto vectorial diff x eV inlinado
+            double nx = dy * evz - dz * evy;
+            double ny = dz * evx - dx * evz;
+            double nz = dx * evy - dy * evx;
+            double modSq = nx*nx + ny*ny + nz*nz;
             if (modSq < 1e-18) continue;
             
-            double cX = n_new.dot(nB), cY = n_new.dot(yA);
+            double cX = nx*nbx + ny*nby + nz*nbz;
+            double cY = nx*yax + ny*yay + nz*yaz;
             double angle = std::atan2(cY, cX); 
             
             if (angle < minAngle) {
@@ -361,8 +366,7 @@ TriangleModel* PointCloud3d::CH_GiftWrapping_Optimized() {
         
         if (best != -1) {
             Triangle3d newTri(pts[E_idx], pts[D_idx], pts[best]);
-            CH.push_back(newTri); 
-            triCache.insert(sortTriIdx(D_idx, E_idx, best));
+            CH.push_back(newTri);
             addE(D_idx, best); addE(best, E_idx);
             opV[getK(D_idx, best)] = E_idx; 
             opV[getK(best, E_idx)] = D_idx;
