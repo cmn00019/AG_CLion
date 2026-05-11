@@ -39,6 +39,13 @@ namespace AlgGeom
 		PointCloud3d* _cloudPr5 = nullptr;
 		int _numPointsPr5 = 500;
 
+		// PR6 variables
+		bool _isPr6Active = false;
+		bool _showPr6Delaunay = true;
+		bool _showPr6Hull = true;
+		bool _showPr6Voronoi = true;
+		Model3D* _drawPr6 = nullptr;
+
 		::TriangleModel*						_tmA = nullptr;
 		::TriangleModel*						_tmB = nullptr;
 		::Octree*								_octA = nullptr;
@@ -78,6 +85,7 @@ namespace AlgGeom
 		void syncPr4Visuals();
 		void clearPr4Visuals();
 		void runPr4BruteForce();
+		void syncPr6Visuals();
 		Model3D* getModel(Model3D::Component* component);
 
 	};

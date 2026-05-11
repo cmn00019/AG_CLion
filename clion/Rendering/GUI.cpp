@@ -388,14 +388,6 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			_modelCompSelected = nullptr;
 		}
 
-		ImGui::SameLine();
-		if (ImGui::Button("Delaunay"))
-		{
-			sceneContent->clearScene();
-			sceneContent->buildDelaunay();
-			_modelCompSelected = nullptr;
-		}
-
 		static bool showOctreeWhite = true;
 		static bool showOctreeGrey = true;
 		static bool showOctreeBlack = true;
@@ -464,10 +456,36 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 		}
 
 		ImGui::SameLine();
+		if (ImGui::Button("Pr6"))
+		{
+			sceneContent->clearScene();
+			sceneContent->buildDelaunay();
+			_modelCompSelected = nullptr;
+		}
+
+		ImGui::SameLine();
 		if (ImGui::Button("Limpiar Escena"))
 		{
 			sceneContent->clearScene();
 			_modelCompSelected = nullptr;
+		}
+
+		// Panel de filtros si la PR6 está activa
+		if (sceneContent->_isPr6Active) {
+			ImGui::Separator();
+			ImGui::TextColored(ImVec4(1, 1, 0, 1), "FILTROS PR6:");
+			if (ImGui::Checkbox("Delaunay", &sceneContent->_showPr6Delaunay)) {
+				sceneContent->syncPr6Visuals();
+			}
+			ImGui::SameLine();
+			if (ImGui::Checkbox("Envolvente Convexa", &sceneContent->_showPr6Hull)) {
+				sceneContent->syncPr6Visuals();
+			}
+			ImGui::SameLine();
+			if (ImGui::Checkbox("Voronoi", &sceneContent->_showPr6Voronoi)) {
+				sceneContent->syncPr6Visuals();
+			}
+			ImGui::Separator();
 		}
 
         // Panel de ejecución y filtros si la PR5 está preparada

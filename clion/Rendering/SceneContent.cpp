@@ -43,6 +43,8 @@ void AlgGeom::SceneContent::clearScene()
     _pr4_boxesA = nullptr;
     _pr4_boxesB = nullptr;
     _isPr4Active = false;
+    _isPr6Active = false;
+    _drawPr6 = nullptr;
     
     clearPr5Scene();
 }
@@ -1315,6 +1317,16 @@ void AlgGeom::SceneContent::clearPr5Scene()
 
 // ============================== DELAUNAY ==============================
 
+void AlgGeom::SceneContent::syncPr6Visuals()
+{
+    if (!_drawPr6) return;
+    AlgGeom::DrawTDelaunay* dt = dynamic_cast<AlgGeom::DrawTDelaunay*>(_drawPr6);
+    if (!dt) return;
+    dt->setDelaunayVisible(_showPr6Delaunay);
+    dt->setHullVisible(_showPr6Hull);
+    dt->setVoronoiVisible(_showPr6Voronoi);
+}
+
 void AlgGeom::SceneContent::buildDelaunay()
 {
     std::cout << "\n============================================" << std::endl;
@@ -1342,6 +1354,9 @@ void AlgGeom::SceneContent::buildDelaunay()
     DrawTDelaunay* drawDt = new DrawTDelaunay(dt, true, true, true);
     drawDt->overrideModelName()->setTriangleColor(vec4(0.5f, 0.8f, 1.0f, 0.3f));
     this->addNewModel(drawDt);
+    _drawPr6 = drawDt;
+    _isPr6Active = true;
+    this->syncPr6Visuals();
 
     // 4. Mostrar informacion de envolvente convexa
     auto hull = dt.getConvexHull();
