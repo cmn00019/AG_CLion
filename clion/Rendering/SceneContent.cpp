@@ -43,6 +43,8 @@ void AlgGeom::SceneContent::clearScene()
     _pr4_boxesA = nullptr;
     _pr4_boxesB = nullptr;
     _isPr4Active = false;
+    _isPr6Active = false;
+    _drawPr6 = nullptr;
     
     clearPr5Scene();
 }
@@ -1315,13 +1317,23 @@ void AlgGeom::SceneContent::clearPr5Scene()
 
 // ============================== DELAUNAY ==============================
 
+void AlgGeom::SceneContent::syncPr6Visuals()
+{
+    if (!_drawPr6) return;
+    AlgGeom::DrawTDelaunay* dt = dynamic_cast<AlgGeom::DrawTDelaunay*>(_drawPr6);
+    if (!dt) return;
+    dt->setDelaunayVisible(_showPr6Delaunay);
+    dt->setHullVisible(_showPr6Hull);
+    dt->setVoronoiVisible(_showPr6Voronoi);
+}
+
 void AlgGeom::SceneContent::buildDelaunay()
 {
     std::cout << "\n============================================" << std::endl;
     std::cout << "PRACTICA DELAUNAY - Nube de 100 puntos 2D" << std::endl;
     std::cout << "============================================" << std::endl;
 
-    // 1. Generar nube de 100 puntos aleatorios en 2D
+    // 1. Nube 100 puntos
     PointCloud cloud;
     float radioNube = 5.0f;
     for (int i = 0; i < 100; i++)
@@ -1332,22 +1344,25 @@ void AlgGeom::SceneContent::buildDelaunay()
 
     std::cout << "Nube generada con " << cloud.size() << " puntos." << std::endl;
 
-    // 2. Construir triangulacion de Delaunay
+    // 2. Triangulacion de Delaunay
     TDelaunay dt(cloud);
     std::cout << "Triangulacion de Delaunay construida." << std::endl;
     std::cout << "Numero de vertices: " << dt.numberOfVertices() << std::endl;
     std::cout << "Numero de triangulos finitos: " << dt.getTriangles().size() << std::endl;
 
-    // 3. Dibujar
+
     DrawTDelaunay* drawDt = new DrawTDelaunay(dt, true, true, true);
     drawDt->overrideModelName()->setTriangleColor(vec4(0.5f, 0.8f, 1.0f, 0.3f));
     this->addNewModel(drawDt);
+    _drawPr6 = drawDt;
+    _isPr6Active = true;
+    this->syncPr6Visuals();
 
-    // 4. Mostrar informacion de envolvente convexa
+    // 3. Mostrar informacion de envolvente convexa
     auto hull = dt.getConvexHull();
     std::cout << "Envolvente convexa: " << hull.size() << " puntos." << std::endl;
 
-    // 5. Mostrar informacion de Voronoi
+    // 4. Mostrar informacion de Voronoi
     auto vEdges = dt.getVoronoiEdges();
     int nSegments = 0, nRays = 0;
     for (const auto& e : vEdges)

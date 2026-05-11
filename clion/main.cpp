@@ -1,10 +1,7 @@
 #include "stdafx.h"
 #include "Window.h"
 
-// ========================================================================
-// Ejemplo terrain.cpp (ya funcionando anteriormente en consola)
-// Se conserva aqui como referencia del ejercicio explicado en clase.
-// ========================================================================
+
 /*
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Projection_traits_xy_3.h>

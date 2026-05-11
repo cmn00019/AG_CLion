@@ -7,22 +7,11 @@
 AlgGeom::DrawTDelaunay::DrawTDelaunay(TDelaunay& dt, bool drawTriangles, bool drawHull, bool drawVoronoi)
     : Model3D(), _delaunay(dt)
 {
-    // ============================================================
-    // Componente principal: puntos + triangulos (lineas + relleno)
-    // ============================================================
-    Component* comp = new Component;
 
-    // Extraer vertices unicos de la triangulacion
     std::vector<Point_2> uniquePoints;
     for (auto v = dt.getDelaunay().finite_vertices_begin(); v != dt.getDelaunay().finite_vertices_end(); ++v)
     {
         uniquePoints.push_back(v->point());
-    }
-
-    // Anadir vertices al componente
-    for (const auto& p : uniquePoints)
-    {
-        comp->_vertices.push_back(VAO::Vertex{ vec3((float)p.x(), (float)p.y(), 0.0f), vec3(0.0f, 0.0f, 1.0f) });
     }
 
     // Funcion lambda para obtener indice de un punto
@@ -35,13 +24,32 @@ AlgGeom::DrawTDelaunay::DrawTDelaunay(TDelaunay& dt, bool drawTriangles, bool dr
         return 0;
     };
 
-    // Puntos (IBO_POINT)
+
+    Component* pointsComp = new Component;
+    for (const auto& p : uniquePoints)
+    {
+        pointsComp->_vertices.push_back(VAO::Vertex{ vec3((float)p.x(), (float)p.y(), 0.0f), vec3(0.0f, 0.0f, 1.0f) });
+    }
     for (size_t i = 0; i < uniquePoints.size(); ++i)
     {
-        comp->_indices[VAO::IBO_POINT].push_back((GLuint)i);
+        pointsComp->_indices[VAO::IBO_POINT].push_back((GLuint)i);
+    }
+    pointsComp->_material._pointColor = vec3(0.0f, 0.0f, 1.0f);          // azul
+    pointsComp->_material._useUniformColor = true;
+    pointsComp->_pointSize = 12.0f;
+    pointsComp->completeTopology();
+    _pointsCompIdx = (int)this->_components.size();
+    this->_components.push_back(std::unique_ptr<Component>(pointsComp));
+    this->buildVao(pointsComp);
+
+
+    // Componente de triangulos y aristas Delaunay
+    Component* delaunayComp = new Component;
+    for (const auto& p : uniquePoints)
+    {
+        delaunayComp->_vertices.push_back(VAO::Vertex{ vec3((float)p.x(), (float)p.y(), 0.0f), vec3(0.0f, 0.0f, 1.0f) });
     }
 
-    // Triangulos y aristas (IBO_TRIANGLE e IBO_LINE)
     auto triangles = dt.getTriangles();
     for (const auto& tri : triangles)
     {
@@ -49,23 +57,22 @@ AlgGeom::DrawTDelaunay::DrawTDelaunay(TDelaunay& dt, bool drawTriangles, bool dr
         GLuint i1 = getIndex(tri[1]);
         GLuint i2 = getIndex(tri[2]);
 
-        comp->_indices[VAO::IBO_TRIANGLE].insert(comp->_indices[VAO::IBO_TRIANGLE].end(),
+        delaunayComp->_indices[VAO::IBO_TRIANGLE].insert(delaunayComp->_indices[VAO::IBO_TRIANGLE].end(),
             { i0, i1, i2, RESTART_PRIMITIVE_INDEX });
-        comp->_indices[VAO::IBO_LINE].insert(comp->_indices[VAO::IBO_LINE].end(),
+        delaunayComp->_indices[VAO::IBO_LINE].insert(delaunayComp->_indices[VAO::IBO_LINE].end(),
             { i0, i1, i1, i2, i2, i0 });
     }
 
-    comp->_material._pointColor = vec3(0.0f, 0.0f, 1.0f);          // azul
-    comp->_material._lineColor = vec3(0.0f, 0.0f, 0.0f);            // negro (Delaunay)
-    comp->_material._kdColor = vec4(0.5f, 0.8f, 1.0f, 0.3f);       // cyan transparente
-    comp->_material._useUniformColor = true;
-    comp->_pointSize = 5.0f;
-    comp->_lineWidth = 1.0f;
+    delaunayComp->_material._lineColor = vec3(0.0f, 0.0f, 0.0f);            // negro
+    delaunayComp->_material._kdColor = vec4(0.5f, 0.8f, 1.0f, 0.3f);       // azul
+    delaunayComp->_material._useUniformColor = true;
+    delaunayComp->_lineWidth = 1.0f;
 
-    comp->completeTopology();
-    this->_components.push_back(std::unique_ptr<Component>(comp));
+    delaunayComp->completeTopology();
+    _delaunayCompIdx = (int)this->_components.size();
+    this->_components.push_back(std::unique_ptr<Component>(delaunayComp));
+    this->buildVao(delaunayComp);
     this->calculateAABB();
-    this->buildVao(comp);
 
     // Calcular bounding box para recortar Voronoi
     float minX = (std::numeric_limits<float>::max)();
@@ -85,9 +92,7 @@ AlgGeom::DrawTDelaunay::DrawTDelaunay(TDelaunay& dt, bool drawTriangles, bool dr
     if (margin < 1.0f || std::isnan(margin) || std::isinf(margin))
         margin = 5.0f;
 
-    // ============================================================
-    // Optativo I: Envolvente convexa (lineas rojas)
-    // ============================================================
+    // Optativo I: Envolvente convexa (roja)
     if (drawHull)
     {
         auto hull = dt.getConvexHull();
@@ -107,14 +112,13 @@ AlgGeom::DrawTDelaunay::DrawTDelaunay(TDelaunay& dt, bool drawTriangles, bool dr
             hullComp->_material._lineColor = vec3(1.0f, 0.0f, 0.0f); // rojo
             hullComp->_lineWidth = 2.0f;
             hullComp->completeTopology();
+            _hullCompIdx = (int)this->_components.size();
             this->_components.push_back(std::unique_ptr<Component>(hullComp));
             this->buildVao(hullComp);
         }
     }
 
-    // ============================================================
-    // Optativo II: Diagrama de Voronoi recortado (lineas verdes)
-    // ============================================================
+    // Optativo II: Diagrama de Voronoi recortado (verde)
     if (drawVoronoi)
     {
         auto vEdges = dt.getCroppedVoronoi(minX - margin, minY - margin, maxX + margin, maxY + margin);
@@ -133,10 +137,29 @@ AlgGeom::DrawTDelaunay::DrawTDelaunay(TDelaunay& dt, bool drawTriangles, bool dr
             vorComp->_material._lineColor = vec3(0.0f, 1.0f, 0.0f); // verde
             vorComp->_lineWidth = 1.5f;
             vorComp->completeTopology();
+            _voronoiCompIdx = (int)this->_components.size();
             this->_components.push_back(std::unique_ptr<Component>(vorComp));
             this->buildVao(vorComp);
         }
     }
+}
+
+void AlgGeom::DrawTDelaunay::setDelaunayVisible(bool visible)
+{
+    if (_delaunayCompIdx >= 0 && _delaunayCompIdx < (int)_components.size())
+        _components[_delaunayCompIdx]->_enabled = visible;
+}
+
+void AlgGeom::DrawTDelaunay::setHullVisible(bool visible)
+{
+    if (_hullCompIdx >= 0 && _hullCompIdx < (int)_components.size())
+        _components[_hullCompIdx]->_enabled = visible;
+}
+
+void AlgGeom::DrawTDelaunay::setVoronoiVisible(bool visible)
+{
+    if (_voronoiCompIdx >= 0 && _voronoiCompIdx < (int)_components.size())
+        _components[_voronoiCompIdx]->_enabled = visible;
 }
 
 AlgGeom::DrawTDelaunay::~DrawTDelaunay()
