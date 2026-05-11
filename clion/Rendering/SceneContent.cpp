@@ -1362,15 +1362,7 @@ void AlgGeom::SceneContent::buildDelaunay()
     auto hull = dt.getConvexHull();
     std::cout << "Envolvente convexa: " << hull.size() << " puntos." << std::endl;
 
-    // 4. Mostrar informacion de Voronoi
-    auto vEdges = dt.getVoronoiEdges();
-    int nSegments = 0, nRays = 0;
-    for (const auto& e : vEdges)
-    {
-        if (e.isSegment) nSegments++;
-        else nRays++;
-    }
-    std::cout << "Diagrama de Voronoi: " << nSegments << " aristas finitas, " << nRays << " rayos." << std::endl;
+
 
     std::cout << "============================================" << std::endl;
 }
