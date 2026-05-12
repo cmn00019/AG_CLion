@@ -9,6 +9,7 @@
 class TriangleModel;
 class Octree;
 class PointCloud3d;
+class CgalBooleanOperations;
 #include "Triangle3d.h"
 #include "PointCloud3d.h"
 
@@ -26,6 +27,16 @@ namespace AlgGeom
 		bool									_showYellowBoxes = true;
 		bool									_showRedTriangles = true;
 		bool									_isBruteForceActive = false;
+
+		// PR6 variables
+		bool									_isPr6Active = false;
+		CgalBooleanOperations*					_cgalBool = nullptr;
+		Model3D*								_drawBoolA = nullptr;
+		Model3D*								_drawBoolB = nullptr;
+		Model3D*								_drawBoolResult = nullptr;
+		float									_pr6SimplifyRatio = 1.0f;
+		std::string								_pr6ModelPathA;
+		std::string								_pr6ModelPathB;
 		
 		// PR5 variables
 		bool _isPr5Active = false;
@@ -67,6 +78,17 @@ namespace AlgGeom
 		void buildPr2d();
 		void buildPr3a();
 		void buildPr4();
+		void buildPr6();
+		void loadBooleanModelA(const std::string& path);
+		void loadBooleanModelB(const std::string& path);
+		void runBooleanUnion();
+		void runBooleanIntersection();
+		void runBooleanDifferenceAB();
+		void runBooleanDifferenceBA();
+		void simplifyBooleanResult(double ratio);
+		void saveBooleanResult(const std::string& path);
+		void clearBooleanScene(bool clearAll = true);
+		void showBooleanInputs();
 		void buildDelaunay();
 		void generateCloudPr5();
 		void extractCloudFromModel();

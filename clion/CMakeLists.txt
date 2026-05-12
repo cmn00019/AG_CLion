@@ -95,6 +95,8 @@ set(SOURCE_FILES
         ${GEOMETRY}/Voxelization.h
         ${GEOMETRY}/TDelaunay.cpp
         ${GEOMETRY}/TDelaunay.h
+        ${GEOMETRY}/CgalBooleanOperations.cpp
+        ${GEOMETRY}/CgalBooleanOperations.h
         ${PATTERNS}/Singleton.h
         ${PRECOMPILED_HEADERS}/InclDraw2D.h
         ${PRECOMPILED_HEADERS}/InclGeom2D.h

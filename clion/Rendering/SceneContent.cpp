@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "SceneContent.h"
+#include "CgalBooleanOperations.h"
 
 #include "ChronoUtilities.h"
 #include "InclDraw2D.h"
@@ -45,6 +46,7 @@ void AlgGeom::SceneContent::clearScene()
     _isPr4Active = false;
     
     clearPr5Scene();
+    clearBooleanScene();
 }
 
 void AlgGeom::SceneContent::buildScenario()
@@ -964,6 +966,59 @@ namespace AlgGeom {
             }
         }
     };
+
+    class DrawBooleanResult : public Model3D {
+    public:
+        DrawBooleanResult(TriangleModel* tm) {
+            if (!tm) return;
+            std::vector<Vect3d>* verts = tm->getVertices();
+            std::vector<unsigned>* idxs = tm->getIndices();
+            if (!verts || !idxs || idxs->empty()) return;
+
+            Component* comp = new Component();
+            comp->_vertices.reserve(verts->size());
+            for (const auto& v : *verts)
+            {
+                VAO::Vertex vtx;
+                vtx._position = vec3((float)v.getX(), (float)v.getY(), (float)v.getZ());
+                vtx._normal = vec3(0.0f, 1.0f, 0.0f);
+                vtx._textCoord = vec2(0.0f);
+                comp->_vertices.push_back(vtx);
+            }
+
+            size_t nFaces = idxs->size() / 3;
+            for (size_t i = 0; i < nFaces; ++i)
+            {
+                unsigned i0 = (*idxs)[i * 3 + 0];
+                unsigned i1 = (*idxs)[i * 3 + 1];
+                unsigned i2 = (*idxs)[i * 3 + 2];
+                if (i0 < comp->_vertices.size() && i1 < comp->_vertices.size() && i2 < comp->_vertices.size())
+                {
+                    vec3 a = comp->_vertices[i0]._position;
+                    vec3 b = comp->_vertices[i1]._position;
+                    vec3 c = comp->_vertices[i2]._position;
+                    vec3 n = glm::normalize(glm::cross(b - a, c - a));
+                    comp->_vertices[i0]._normal = n;
+                    comp->_vertices[i1]._normal = n;
+                    comp->_vertices[i2]._normal = n;
+
+                    comp->_indices[VAO::IBO_TRIANGLE].push_back(i0);
+                    comp->_indices[VAO::IBO_TRIANGLE].push_back(i1);
+                    comp->_indices[VAO::IBO_TRIANGLE].push_back(i2);
+                    comp->_indices[VAO::IBO_TRIANGLE].push_back(RESTART_PRIMITIVE_INDEX);
+                }
+            }
+
+            comp->completeTopology();
+            if (comp->_vertices.size() > 0) {
+                this->_components.push_back(std::unique_ptr<Component>(comp));
+                this->buildVao(comp);
+                this->calculateAABB();
+            } else {
+                delete comp;
+            }
+        }
+    };
 }
 
 void AlgGeom::SceneContent::buildPr4()
@@ -1407,3 +1462,386 @@ void AlgGeom::SceneContent::update_pr5()
 	    _visibleSlow = 0;
 	}
 }
+
+
+// ============================== PRACTICA 6 - OPERACIONES BOOLEANAS CGAL ==============================
+
+void AlgGeom::SceneContent::buildPr6()
+{
+    std::cout << "\n============================================" << std::endl;
+    std::cout << "PRACTICA 6 - Operaciones Booleanas CGAL" << std::endl;
+    std::cout << "============================================" << std::endl;
+    std::cout << "Cargue dos modelos (A y B) desde el panel Models." << std::endl;
+    _isPr6Active = true;
+}
+
+void AlgGeom::SceneContent::loadBooleanModelA(const std::string& path)
+{
+    if (!_cgalBool) _cgalBool = new CgalBooleanOperations();
+
+    if (_drawBoolA)
+    {
+        auto it = std::remove_if(_model.begin(), _model.end(), [&](std::unique_ptr<Model3D>& m) {
+            return m.get() == _drawBoolA;
+        });
+        _model.erase(it, _model.end());
+        _drawBoolA = nullptr;
+    }
+
+    _pr6ModelPathA = path;
+    bool ok = _cgalBool->loadModelA(path);
+    if (!ok)
+    {
+        std::cout << "[PR6] Error cargando modelo A." << std::endl;
+        return;
+    }
+
+    _cgalBool->printInfoA();
+
+    // Visualizar modelo A
+    Model3D* dm = (new DrawMesh())->loadModelOBJ(path)->overrideModelName();
+    dm->setName("PR6_ModeloA");
+    _drawBoolA = dm;
+    this->addNewModel(dm);
+}
+
+void AlgGeom::SceneContent::loadBooleanModelB(const std::string& path)
+{
+    if (!_cgalBool) _cgalBool = new CgalBooleanOperations();
+
+    if (_drawBoolB)
+    {
+        auto it = std::remove_if(_model.begin(), _model.end(), [&](std::unique_ptr<Model3D>& m) {
+            return m.get() == _drawBoolB;
+        });
+        _model.erase(it, _model.end());
+        _drawBoolB = nullptr;
+    }
+
+    _pr6ModelPathB = path;
+    bool ok = _cgalBool->loadModelB(path);
+    if (!ok)
+    {
+        std::cout << "[PR6] Error cargando modelo B." << std::endl;
+        return;
+    }
+
+    _cgalBool->printInfoB();
+
+    // Visualizar modelo B
+    Model3D* dm = (new DrawMesh())->loadModelOBJ(path)->overrideModelName();
+    dm->setName("PR6_ModeloB");
+    _drawBoolB = dm;
+    this->addNewModel(dm);
+}
+
+void AlgGeom::SceneContent::runBooleanUnion()
+{
+    std::cout << "[PR6] Ejecutando UNION..." << std::endl;
+    if (!_cgalBool)
+    {
+        std::cout << "[PR6] ERROR: no se ha inicializado el motor booleano." << std::endl;
+        return;
+    }
+    if (!_cgalBool->isValidA() || !_cgalBool->isValidB())
+    {
+        std::cout << "[PR6] ERROR: se requieren dos modelos cerrados y triangulados." << std::endl;
+        std::cout << "[PR6]   - Comprueba la consola para ver el diagnostico de cada modelo." << std::endl;
+        std::cout << "[PR6]   - Los modelos deben ser mallas cerradas (water-tight) sin agujeros." << std::endl;
+        return;
+    }
+
+    clearBooleanScene(false);
+
+    // Aplicar transformaciones actuales de los modelos visuales
+    if (_drawBoolA && _drawBoolB)
+    {
+        _cgalBool->applyModelMatrixToMeshes(_drawBoolA->getModelMatrix(), _drawBoolB->getModelMatrix());
+    }
+
+    if (_cgalBool->computeUnion())
+    {
+        std::cout << "[PR6] Union calculada. Exportando resultado..." << std::endl;
+        TriangleModel* tm = _cgalBool->exportResultToTriangleModel();
+        if (tm)
+        {
+            std::cout << "[PR6] Resultado exportado: " << tm->getVertices()->size() << " vertices, " << tm->getIndices()->size()/3 << " caras." << std::endl;
+            DrawBooleanResult* resultModel = new DrawBooleanResult(tm);
+            if (resultModel)
+            {
+                resultModel->setName("PR6_Resultado");
+                resultModel->setTriangleColor(vec4(1.0f, 0.8f, 0.2f, 1.0f));
+                resultModel->setLineColor(vec3(1.0f, 0.8f, 0.2f));
+                _drawBoolResult = resultModel;
+                this->addNewModel(resultModel);
+                std::cout << "[PR6] Resultado de UNION añadido a la escena correctamente." << std::endl;
+                // Ocultar A y B, mostrar resultado
+                if (_drawBoolA) _drawBoolA->setVisibility(false);
+                if (_drawBoolB) _drawBoolB->setVisibility(false);
+                if (_drawBoolResult) _drawBoolResult->setVisibility(true);
+            }
+            else
+            {
+                std::cout << "[PR6] ERROR: no se pudo crear el modelo visual del resultado." << std::endl;
+            }
+            delete tm;
+        }
+        else
+        {
+            std::cout << "[PR6] ERROR: exportResultToTriangleModel devolvio null." << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "[PR6] La operacion UNION fallo. Revisa los mensajes de CGAL arriba." << std::endl;
+    }
+}
+
+void AlgGeom::SceneContent::runBooleanIntersection()
+{
+    std::cout << "[PR6] Ejecutando INTERSECCION..." << std::endl;
+    if (!_cgalBool || !_cgalBool->isValidA() || !_cgalBool->isValidB())
+    {
+        std::cout << "[PR6] ERROR: se requieren dos modelos cerrados y triangulados." << std::endl;
+        return;
+    }
+
+    clearBooleanScene(false);
+
+    if (_drawBoolA && _drawBoolB)
+    {
+        _cgalBool->applyModelMatrixToMeshes(_drawBoolA->getModelMatrix(), _drawBoolB->getModelMatrix());
+    }
+
+    if (_cgalBool->computeIntersection())
+    {
+        TriangleModel* tm = _cgalBool->exportResultToTriangleModel();
+        if (tm)
+        {
+            DrawBooleanResult* resultModel = new DrawBooleanResult(tm);
+            if (resultModel)
+            {
+                resultModel->setName("PR6_Resultado");
+                resultModel->setTriangleColor(vec4(0.2f, 0.6f, 1.0f, 1.0f));
+                resultModel->setLineColor(vec3(0.2f, 0.6f, 1.0f));
+                _drawBoolResult = resultModel;
+                this->addNewModel(resultModel);
+                std::cout << "[PR6] Resultado de INTERSECCION añadido a la escena." << std::endl;
+                if (_drawBoolA) _drawBoolA->setVisibility(false);
+                if (_drawBoolB) _drawBoolB->setVisibility(false);
+                if (_drawBoolResult) _drawBoolResult->setVisibility(true);
+            }
+            delete tm;
+        }
+    }
+    else
+    {
+        std::cout << "[PR6] La operacion INTERSECCION fallo." << std::endl;
+    }
+}
+
+void AlgGeom::SceneContent::runBooleanDifferenceAB()
+{
+    std::cout << "[PR6] Ejecutando DIFERENCIA A-B..." << std::endl;
+    if (!_cgalBool || !_cgalBool->isValidA() || !_cgalBool->isValidB())
+    {
+        std::cout << "[PR6] ERROR: se requieren dos modelos cerrados y triangulados." << std::endl;
+        return;
+    }
+
+    clearBooleanScene(false);
+
+    if (_drawBoolA && _drawBoolB)
+    {
+        _cgalBool->applyModelMatrixToMeshes(_drawBoolA->getModelMatrix(), _drawBoolB->getModelMatrix());
+    }
+
+    if (_cgalBool->computeDifferenceAB())
+    {
+        TriangleModel* tm = _cgalBool->exportResultToTriangleModel();
+        if (tm)
+        {
+            DrawBooleanResult* resultModel = new DrawBooleanResult(tm);
+            if (resultModel)
+            {
+                resultModel->setName("PR6_Resultado");
+                resultModel->setTriangleColor(vec4(1.0f, 0.3f, 0.3f, 1.0f));
+                resultModel->setLineColor(vec3(1.0f, 0.3f, 0.3f));
+                _drawBoolResult = resultModel;
+                this->addNewModel(resultModel);
+                std::cout << "[PR6] Resultado de DIFERENCIA A-B añadido a la escena." << std::endl;
+                if (_drawBoolA) _drawBoolA->setVisibility(false);
+                if (_drawBoolB) _drawBoolB->setVisibility(false);
+                if (_drawBoolResult) _drawBoolResult->setVisibility(true);
+            }
+            delete tm;
+        }
+    }
+    else
+    {
+        std::cout << "[PR6] La operacion DIFERENCIA A-B fallo." << std::endl;
+    }
+}
+
+void AlgGeom::SceneContent::runBooleanDifferenceBA()
+{
+    std::cout << "[PR6] Ejecutando DIFERENCIA B-A..." << std::endl;
+    if (!_cgalBool || !_cgalBool->isValidA() || !_cgalBool->isValidB())
+    {
+        std::cout << "[PR6] ERROR: se requieren dos modelos cerrados y triangulados." << std::endl;
+        return;
+    }
+
+    clearBooleanScene(false);
+
+    if (_drawBoolA && _drawBoolB)
+    {
+        _cgalBool->applyModelMatrixToMeshes(_drawBoolA->getModelMatrix(), _drawBoolB->getModelMatrix());
+    }
+
+    if (_cgalBool->computeDifferenceBA())
+    {
+        TriangleModel* tm = _cgalBool->exportResultToTriangleModel();
+        if (tm)
+        {
+            DrawBooleanResult* resultModel = new DrawBooleanResult(tm);
+            if (resultModel)
+            {
+                resultModel->setName("PR6_Resultado");
+                resultModel->setTriangleColor(vec4(0.3f, 1.0f, 0.3f, 1.0f));
+                resultModel->setLineColor(vec3(0.3f, 1.0f, 0.3f));
+                _drawBoolResult = resultModel;
+                this->addNewModel(resultModel);
+                std::cout << "[PR6] Resultado de DIFERENCIA B-A añadido a la escena." << std::endl;
+                if (_drawBoolA) _drawBoolA->setVisibility(false);
+                if (_drawBoolB) _drawBoolB->setVisibility(false);
+                if (_drawBoolResult) _drawBoolResult->setVisibility(true);
+            }
+            delete tm;
+        }
+    }
+    else
+    {
+        std::cout << "[PR6] La operacion DIFERENCIA B-A fallo." << std::endl;
+    }
+}
+
+void AlgGeom::SceneContent::simplifyBooleanResult(double ratio)
+{
+    if (!_cgalBool || !_cgalBool->hasResult())
+    {
+        std::cout << "[PR6] No hay resultado para simplificar." << std::endl;
+        return;
+    }
+
+    if (_cgalBool->simplifyResult(ratio))
+    {
+        // Reemplazar visualización del resultado
+        if (_drawBoolResult)
+        {
+            auto it = std::remove_if(_model.begin(), _model.end(), [&](std::unique_ptr<Model3D>& m) {
+                return m.get() == _drawBoolResult;
+            });
+            _model.erase(it, _model.end());
+            _drawBoolResult = nullptr;
+        }
+
+        TriangleModel* tm = _cgalBool->exportResultToTriangleModel();
+        if (tm)
+        {
+            DrawBooleanResult* resultModel = new DrawBooleanResult(tm);
+            if (resultModel)
+            {
+                resultModel->setName("PR6_Resultado");
+                resultModel->setTriangleColor(vec4(1.0f, 0.8f, 0.2f, 1.0f));
+                resultModel->setLineColor(vec3(1.0f, 0.8f, 0.2f));
+                _drawBoolResult = resultModel;
+                this->addNewModel(resultModel);
+                std::cout << "[PR6] Resultado simplificado añadido a la escena." << std::endl;
+                if (_drawBoolA) _drawBoolA->setVisibility(false);
+                if (_drawBoolB) _drawBoolB->setVisibility(false);
+                if (_drawBoolResult) _drawBoolResult->setVisibility(true);
+            }
+            delete tm;
+        }
+    }
+}
+
+void AlgGeom::SceneContent::saveBooleanResult(const std::string& path)
+{
+    if (!_cgalBool || !_cgalBool->hasResult())
+    {
+        std::cout << "[PR6] No hay resultado para guardar." << std::endl;
+        return;
+    }
+
+    bool ok = _cgalBool->saveResultToOBJ(path);
+    if (!ok)
+    {
+        std::cout << "[PR6] Error guardando resultado." << std::endl;
+    }
+}
+
+void AlgGeom::SceneContent::showBooleanInputs()
+{
+    if (_drawBoolResult)
+    {
+        _drawBoolResult->setVisibility(false);
+    }
+    if (_drawBoolA)
+    {
+        _drawBoolA->setVisibility(true);
+    }
+    if (_drawBoolB)
+    {
+        _drawBoolB->setVisibility(true);
+    }
+    std::cout << "[PR6] Modelos A y B restaurados en escena. Puedes moverlos/rotarlos y volver a ejecutar una operacion." << std::endl;
+}
+
+void AlgGeom::SceneContent::clearBooleanScene(bool clearAll)
+{
+    if (clearAll)
+    {
+        _isPr6Active = false;
+    }
+
+    if (_drawBoolResult)
+    {
+        auto it = std::remove_if(_model.begin(), _model.end(), [&](std::unique_ptr<Model3D>& m) {
+            return m.get() == _drawBoolResult;
+        });
+        _model.erase(it, _model.end());
+        _drawBoolResult = nullptr;
+    }
+
+    if (clearAll)
+    {
+        if (_drawBoolA)
+        {
+            auto it = std::remove_if(_model.begin(), _model.end(), [&](std::unique_ptr<Model3D>& m) {
+                return m.get() == _drawBoolA;
+            });
+            _model.erase(it, _model.end());
+            _drawBoolA = nullptr;
+        }
+        if (_drawBoolB)
+        {
+            auto it = std::remove_if(_model.begin(), _model.end(), [&](std::unique_ptr<Model3D>& m) {
+                return m.get() == _drawBoolB;
+            });
+            _model.erase(it, _model.end());
+            _drawBoolB = nullptr;
+        }
+        if (_cgalBool)
+        {
+            delete _cgalBool;
+            _cgalBool = nullptr;
+        }
+        _pr6ModelPathA.clear();
+        _pr6ModelPathB.clear();
+    }
+
+    if (_cgalBool) _cgalBool->clearResult();
+}
+

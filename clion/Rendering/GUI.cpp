@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "GUI.h"
+#include "CgalBooleanOperations.h"
 
 #include "DrawMesh.h"
 #include "font_awesome.hpp"
@@ -107,6 +108,18 @@ void AlgGeom::GUI::processSelectedFile(FileDialog fileDialog, const std::string&
 		sceneContent->addNewModel(model);
 		sceneContent->_currentModelPathB = filename;
 		sceneContent->_drawB_ref = model;
+	}
+	else if (fileDialog == FileDialog::OPEN_BOOL_A)
+	{
+		sceneContent->loadBooleanModelA(filename);
+	}
+	else if (fileDialog == FileDialog::OPEN_BOOL_B)
+	{
+		sceneContent->loadBooleanModelB(filename);
+	}
+	else if (fileDialog == FileDialog::SAVE_BOOL_RESULT)
+	{
+		sceneContent->saveBooleanResult(filename);
 	}
 }
 
@@ -279,7 +292,7 @@ void AlgGeom::GUI::showFileDialog(SceneContent* sceneContent)
 		if (std::filesystem::exists(_lastDirectory))
 			_lastDirectory = DEFAULT_DIRECTORY;
 
-		uint16_t iFileDialog = static_cast<uint16_t>(_fileDialog) / 2;
+		uint16_t iFileDialog = static_cast<uint16_t>(_fileDialog);
 		ImGuiFileDialog::Instance()->OpenDialog(FILE_DIALOG_TEXT[iFileDialog], "Select a file", FILE_DIALOG_EXTENSION[iFileDialog].c_str());
 
 		if (ImGuiFileDialog::Instance()->Display(FILE_DIALOG_TEXT[iFileDialog]))
@@ -464,6 +477,14 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 		}
 
 		ImGui::SameLine();
+		if (ImGui::Button("PR6 Booleanas"))
+		{
+			sceneContent->clearScene();
+			sceneContent->buildPr6();
+			_modelCompSelected = nullptr;
+		}
+
+		ImGui::SameLine();
 		if (ImGui::Button("Limpiar Escena"))
 		{
 			sceneContent->clearScene();
@@ -496,6 +517,111 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
             ImGui::Separator();
         }
 
+        // Panel de ejecucion y filtros si la PR6 esta preparada
+        if (sceneContent->_isPr6Active) {
+            ImGui::Separator();
+            ImGui::TextColored(ImVec4(1, 1, 0, 1), "EJECUCION PR6 - Booleanas CGAL:");
+
+            if (ImGui::Button("Cargar Modelo A")) {
+                _fileDialog = FileDialog::OPEN_BOOL_A;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cargar Modelo B")) {
+                _fileDialog = FileDialog::OPEN_BOOL_B;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Limpiar PR6")) {
+                sceneContent->clearBooleanScene();
+                _modelCompSelected = nullptr;
+            }
+
+            // Info de diagnosticos de modelos cargados
+            if (sceneContent->_cgalBool) {
+                ImGui::Spacing();
+                bool validA = sceneContent->_cgalBool->hasA() && sceneContent->_cgalBool->isValidA();
+                bool validB = sceneContent->_cgalBool->hasB() && sceneContent->_cgalBool->isValidB();
+                ImVec4 colorOk(0.0f, 1.0f, 0.0f, 1.0f);
+                ImVec4 colorBad(1.0f, 0.0f, 0.0f, 1.0f);
+
+                if (sceneContent->_cgalBool->hasA()) {
+                    ImGui::TextColored(validA ? colorOk : colorBad, "Modelo A: %zu vertices, %zu caras (%s)",
+                        sceneContent->_cgalBool->getAVertices(),
+                        sceneContent->_cgalBool->getAFaces(),
+                        validA ? "VALIDO" : "NO VALIDO - debe ser cerrado");
+                } else {
+                    ImGui::TextColored(colorBad, "Modelo A: no cargado");
+                }
+
+                if (sceneContent->_cgalBool->hasB()) {
+                    ImGui::TextColored(validB ? colorOk : colorBad, "Modelo B: %zu vertices, %zu caras (%s)",
+                        sceneContent->_cgalBool->getBVertices(),
+                        sceneContent->_cgalBool->getBFaces(),
+                        validB ? "VALIDO" : "NO VALIDO - debe ser cerrado");
+                } else {
+                    ImGui::TextColored(colorBad, "Modelo B: no cargado");
+                }
+
+                if (!validA || !validB) {
+                    ImGui::TextColored(colorBad, "IMPORTANTE: los modelos deben ser mallas cerradas (watertight).");
+                    ImGui::TextColored(colorBad, "Usa cubos, esferas, o modelos sin agujeros.");
+                }
+            }
+
+            ImGui::Spacing();
+            if (ImGui::Button("Union")) {
+                sceneContent->runBooleanUnion();
+                _modelCompSelected = nullptr;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Interseccion")) {
+                sceneContent->runBooleanIntersection();
+                _modelCompSelected = nullptr;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Diferencia A-B")) {
+                sceneContent->runBooleanDifferenceAB();
+                _modelCompSelected = nullptr;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Diferencia B-A")) {
+                sceneContent->runBooleanDifferenceBA();
+                _modelCompSelected = nullptr;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Volver a modelos")) {
+                sceneContent->showBooleanInputs();
+                _modelCompSelected = nullptr;
+            }
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Oculta el resultado y muestra A y B para moverlos/rotarlos.");
+            }
+
+            ImGui::Spacing();
+            ImGui::PushItemWidth(250);
+            ImGui::SliderFloat("Ratio simplificacion (1.0 = sin cambios)", &sceneContent->_pr6SimplifyRatio, 0.01f, 1.0f);
+            ImGui::PopItemWidth();
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Valores menores reducen mas la malla.\nSe aplica al RESULTADO de la operacion booleana.");
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Aplicar reduccion")) {
+                sceneContent->simplifyBooleanResult(sceneContent->_pr6SimplifyRatio);
+                _modelCompSelected = nullptr;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Guardar resultado .obj")) {
+                _fileDialog = FileDialog::SAVE_BOOL_RESULT;
+            }
+
+            if (sceneContent->_cgalBool && sceneContent->_cgalBool->hasResult()) {
+                ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "Resultado: %zu vertices, %zu caras",
+                    sceneContent->_cgalBool->getResultVertices(),
+                    sceneContent->_cgalBool->getResultFaces());
+            } else {
+                ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "Sin resultado aun. Ejecuta una operacion booleana.");
+            }
+            ImGui::Separator();
+        }
 
 		GuiUtilities::leaveSpace(1);
 
