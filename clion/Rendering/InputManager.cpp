@@ -35,10 +35,10 @@ void AlgGeom::InputManager::buildMoveRelatedBuffers()
 	_eventKey[Events::ALTER_LINE]		= ivec2(GLFW_KEY_1);
 	_eventKey[Events::ALTER_TRIANGLE]	= ivec2(GLFW_KEY_2);
 
-	_eventKey[Events::BOOM]				= ivec2(GLFW_KEY_UP, GLFW_KEY_DOWN);
+	_eventKey[Events::BOOM]				= ivec2(GLFW_KEY_Q, GLFW_KEY_E);
 	_eventKey[Events::DOLLY]			= ivec2(GLFW_KEY_W, GLFW_KEY_S);
 	_eventKey[Events::DOLLY_SPEED_UP]	= ivec2(GLFW_MOD_SHIFT);
-	_eventKey[Events::ORBIT_XZ]			= ivec2(GLFW_KEY_Y);
+	_eventKey[Events::ORBIT_XZ]			= ivec2(0);
 	_eventKey[Events::ORBIT_Y]			= ivec2(GLFW_KEY_X);
 	_eventKey[Events::PAN]				= ivec2(GLFW_KEY_P);
 	_eventKey[Events::RESET]			= ivec2(GLFW_KEY_B);
@@ -80,6 +80,9 @@ bool AlgGeom::InputManager::checkPanTilt(const float xPos, const float yPos)
 
 void AlgGeom::InputManager::processPressedKeyEvent(const int key, const int mods)
 {
+	if (ImGui::GetIO().WantCaptureKeyboard)
+		return;
+
 	Renderer* renderer = Renderer::getInstance();
 	Camera* camera = renderer->getCamera();
 
@@ -188,7 +191,7 @@ void AlgGeom::InputManager::init(GLFWwindow* window)
 {
 	_window = window;
 
-    // - Registramos los callbacks que responderán a los eventos principales
+    // - Registramos los callbacks que responderï¿½n a los eventos principales
     glfwSetWindowRefreshCallback(window, windowRefreshCallback);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetKeyCallback(window, keyCallback);
@@ -212,7 +215,7 @@ void AlgGeom::InputManager::suscribeScreenshot(ScreenshotListener* listener)
 	_screenshotListeners.push_back(listener);
 }
 
-// - Esta función callback será llamada cada vez que se cambie el tamaño del área de dibujo OpenGL.
+// - Esta funciï¿½n callback serï¿½ llamada cada vez que se cambie el tamaï¿½o del ï¿½rea de dibujo OpenGL.
 void AlgGeom::InputManager::framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
 	InputManager* inputManager = InputManager::getInstance();
@@ -222,7 +225,7 @@ void AlgGeom::InputManager::framebufferSizeCallback(GLFWwindow* window, int widt
 	}
 }
 
-// - Esta función callback será llamada cada vez que se pulse una tecla dirigida al área de dibujo OpenGL.
+// - Esta funciï¿½n callback serï¿½ llamada cada vez que se pulse una tecla dirigida al ï¿½rea de dibujo OpenGL.
 void AlgGeom::InputManager::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	InputManager* inputManager = InputManager::getInstance();
@@ -237,7 +240,7 @@ void AlgGeom::InputManager::keyCallback(GLFWwindow* window, int key, int scancod
 	}
 }
 
-// - Esta función callback será llamada cada vez que se pulse algún botón del ratón sobre el área de dibujo OpenGL.
+// - Esta funciï¿½n callback serï¿½ llamada cada vez que se pulse algï¿½n botï¿½n del ratï¿½n sobre el ï¿½rea de dibujo OpenGL.
 void AlgGeom::InputManager::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
 	if (GUI::getInstance()->isMouseActive()) return;
@@ -263,16 +266,19 @@ void AlgGeom::InputManager::mouseCursorCallback(GLFWwindow* window, double xpos,
 	inputManager->checkPanTilt(static_cast<float>(xpos), static_cast<float>(ypos));
 }
 
-// - Esta función callback será llamada cada vez que se mueva la rueda del ratón sobre el área de dibujo OpenGL.
+// - Esta funciï¿½n callback serï¿½ llamada cada vez que se mueva la rueda del ratï¿½n sobre el ï¿½rea de dibujo OpenGL.
 void AlgGeom::InputManager::scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
+	if (GUI::getInstance()->isMouseActive())
+		return;
+
 	InputManager* inputManager = InputManager::getInstance();
 	Camera* camera = Renderer::getInstance()->getCamera();
 
 	camera->zoom(static_cast<float>(yoffset) * inputManager->_moveSpeed[ZOOM]);
 }
 
-// - Esta función callback será llamada cada vez que el área de dibujo OpenGL deba ser redibujada.
+// - Esta funciï¿½n callback serï¿½ llamada cada vez que el ï¿½rea de dibujo OpenGL deba ser redibujada.
 void AlgGeom::InputManager::windowRefreshCallback(GLFWwindow* window)
 {
 	InputManager* inputManager = InputManager::getInstance();	

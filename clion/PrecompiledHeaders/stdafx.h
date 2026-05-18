@@ -34,6 +34,8 @@
 #include "glm/ext/vector_relational.hpp"  
 #include "glm/gtc/epsilon.hpp"   
 #include "glm/gtx/norm.hpp"
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 // Gui
 #include "imgui.h"

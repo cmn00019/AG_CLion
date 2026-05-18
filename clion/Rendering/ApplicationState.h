@@ -28,9 +28,16 @@ namespace AlgGeom
 		// Topology
 		bool							_activeRendering[VAO::NUM_IBOS];
 
+		// Global rendering colors
+		vec3							_globalWireframeColor;
+		vec4							_globalTriangleColor;
+		vec3							_globalPointColor;
+		float							_globalLineWidth;
+		float							_globalPointSize;
+
 		ApplicationState()
 		{
-			_backgroundColor = vec3(.6f);
+			_backgroundColor = vec3(0.15f);
 			_materialScattering = 1.0f;
 			_numFps = 0;
 			_selectedCamera = 0;
@@ -40,6 +47,12 @@ namespace AlgGeom
 			_screenshotFactor = 3.0f;
 
 			for (int i = 0; i < VAO::NUM_IBOS; ++i) _activeRendering[i] = /*i == VAO::IBO_TRIANGLE*/true;
+
+			_globalWireframeColor = vec3(1.0f);
+			_globalTriangleColor = vec4(1.0f, 0.5f, 0.0f, 1.0f);
+			_globalPointColor = vec3(1.0f);
+			_globalLineWidth = 1.0f;
+			_globalPointSize = 3.0f;
 
 			_lightPosition = vec3(.0f);
 			_Ia = vec3(.6f);

@@ -1,7 +1,7 @@
 #pragma once
 
 /**
-	Copyright(C) 2023 Alfonso López Ruiz
+	Copyright(C) 2023 Alfonso Lï¿½pez Ruiz
 
 	This program is free software : you can redistribute it and /or modify
 	it under the terms of the GNU General Public License as published by
@@ -57,6 +57,8 @@ namespace AlgGeom
 		void setUp(const vec3& up);
 		void setZFar(float zfar);
 		void setZNear(float znear);
+		float getZFar() const { return _properties._zFar; }
+		float getZNear() const { return _properties._zNear; }
 		void updateMatrices();
 
 		// Movements

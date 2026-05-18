@@ -169,14 +169,16 @@ void AlgGeom::Camera::orbitXZ(float speed)
 {
 	if (this->_properties._2d) return;
 
-	const mat4 rotationMatrix = glm::rotate(mat4(1.0f), speed, this->_properties._u);					// We will pass over the scene, x or z axis could be used
-
+	const mat4 rotationMatrix = glm::rotate(mat4(1.0f), speed, this->_properties._u);
 	this->_properties._eye = vec3(rotationMatrix * vec4(this->_properties._eye - this->_properties._lookAt, 1.0f)) + this->_properties._lookAt;
-	this->_properties._u = vec3(rotationMatrix * vec4(this->_properties._u, 0.0f));
-	this->_properties._v = vec3(rotationMatrix * vec4(this->_properties._v, 0.0f));
-	this->_properties._n = vec3(rotationMatrix * vec4(this->_properties._n, 0.0f));
-	this->_properties._up = glm::normalize(glm::cross(this->_properties._n, this->_properties._u));						// Free rotation => we can look down or up
-
+	vec3 oldU = this->_properties._u;
+	this->_properties.computeAxes(this->_properties._n, this->_properties._u, this->_properties._v);
+	if (glm::dot(oldU, this->_properties._u) < 0.0f)
+	{
+		this->_properties._u = -this->_properties._u;
+		this->_properties._v = -this->_properties._v;
+	}
+	this->_properties._up = this->_properties._v;
 	this->_properties.computeViewMatrices();
 }
 
@@ -185,13 +187,15 @@ void AlgGeom::Camera::orbitY(float speed)
 	if (this->_properties._2d) return;
 
 	const mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), speed, glm::vec3(0.0, 1.0f, 0.0f));
-
-	this->_properties._u = vec3(rotationMatrix * vec4(this->_properties._u, 0.0f));
-	this->_properties._v = vec3(rotationMatrix * vec4(this->_properties._v, 0.0f));
-	this->_properties._n = vec3(rotationMatrix * vec4(this->_properties._n, 0.0f));
-	this->_properties._up = glm::normalize(glm::cross(this->_properties._n, this->_properties._u));								// This movement doesn't change UP, but it could occur as a result of previous operations
 	this->_properties._eye = vec3(rotationMatrix * vec4(this->_properties._eye - this->_properties._lookAt, 1.0f)) + this->_properties._lookAt;
-
+	vec3 oldU = this->_properties._u;
+	this->_properties.computeAxes(this->_properties._n, this->_properties._u, this->_properties._v);
+	if (glm::dot(oldU, this->_properties._u) < 0.0f)
+	{
+		this->_properties._u = -this->_properties._u;
+		this->_properties._v = -this->_properties._v;
+	}
+	this->_properties._up = this->_properties._v;
 	this->_properties.computeViewMatrices();
 }
 
@@ -200,14 +204,15 @@ void AlgGeom::Camera::pan(float speed)
 	if (this->_properties._2d) return;
 
 	const mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), speed, vec3(0.0f, 1.0f, 0.0f));
-
-	// Up vector can change, not in the original position tho. Example: orbit XZ (rotated camera) + pan
-	this->_properties._u = vec3(rotationMatrix * vec4(this->_properties._u, 0.0f));
-	this->_properties._v = vec3(rotationMatrix * vec4(this->_properties._v, 0.0f));
-	this->_properties._n = vec3(rotationMatrix * vec4(this->_properties._n, 0.0f));
-	this->_properties._up = glm::normalize(glm::cross(this->_properties._n, this->_properties._u));
 	this->_properties._lookAt = vec3(rotationMatrix * vec4(this->_properties._lookAt - this->_properties._eye, 1.0f)) + this->_properties._eye;
-
+	vec3 oldU = this->_properties._u;
+	this->_properties.computeAxes(this->_properties._n, this->_properties._u, this->_properties._v);
+	if (glm::dot(oldU, this->_properties._u) < 0.0f)
+	{
+		this->_properties._u = -this->_properties._u;
+		this->_properties._v = -this->_properties._v;
+	}
+	this->_properties._up = this->_properties._v;
 	this->_properties.computeViewMatrices();
 }
 
@@ -216,22 +221,27 @@ void AlgGeom::Camera::tilt(float speed)
 	if (this->_properties._2d) return;
 
 	const mat4 rotationMatrix = glm::rotate(mat4(1.0f), speed, this->_properties._u);
+	vec3 newLookAt = glm::vec3(rotationMatrix * glm::vec4(this->_properties._lookAt - this->_properties._eye, 1.0f)) + this->_properties._eye;
+	vec3 newN = glm::normalize(this->_properties._eye - newLookAt);
+	float alpha = glm::acos(glm::clamp(glm::dot(newN, glm::vec3(0.0f, 1.0f, 0.0f)), -1.0f, 1.0f));
 
-	const vec3 n = glm::vec3(rotationMatrix * glm::vec4(this->_properties._n, 0.0f));
-	float alpha = glm::acos(glm::dot(n, glm::vec3(0.0f, 1.0f, 0.0f)));
-
-	if (alpha < speed || alpha >(glm::pi<float>() - speed))
+	if (alpha < std::abs(speed) || alpha > (glm::pi<float>() - std::abs(speed)))
 	{
 		return;
 	}
 
-	this->_properties._v = glm::vec3(rotationMatrix * glm::vec4(this->_properties._v, 0.0f));
-	this->_properties._n = n;
-	this->_properties._up = glm::normalize(glm::cross(this->_properties._n, this->_properties._u));											// It could change because of the rotation
-	this->_properties._lookAt = glm::vec3(rotationMatrix * glm::vec4(this->_properties._lookAt - this->_properties._eye, 1.0f)) + this->_properties._eye;
-
+	this->_properties._lookAt = newLookAt;
+	vec3 oldU = this->_properties._u;
+	this->_properties.computeAxes(this->_properties._n, this->_properties._u, this->_properties._v);
+	if (glm::dot(oldU, this->_properties._u) < 0.0f)
+	{
+		this->_properties._u = -this->_properties._u;
+		this->_properties._v = -this->_properties._v;
+	}
+	this->_properties._up = this->_properties._v;
 	this->_properties.computeViewMatrices();
 }
+
 
 void AlgGeom::Camera::truck(float speed)
 {

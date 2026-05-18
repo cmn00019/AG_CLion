@@ -32,6 +32,11 @@ TriangleModel::~TriangleModel()
 {
 }
 
+TriangleModel::TriangleModel(std::vector<Vect3d>&& vertices, std::vector<unsigned>&& indices)
+    : _octree(nullptr), _vertices(std::move(vertices)), _indices(std::move(indices))
+{
+}
+
 TriangleModel::TriangleModel(std::vector<Triangle3d>& triangles) : _octree(nullptr)
 {
     // Extraer vértices únicos y generar índices

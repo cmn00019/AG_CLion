@@ -32,6 +32,13 @@ void AlgGeom::CameraGuiAdapter::renderGuiObject()
 		updateMatrices |= ImGui::InputFloat2("Bottom Left Coordinates", &_camera->_properties._bottomLeftCorner[0]);
 	}
 
+	GuiUtilities::leaveSpace(2);
+	if (ImGui::Button("Reset Camera"))
+	{
+		_camera->reset();
+		updateMatrices = true;
+	}
+
 	if (updateMatrices)
 	{
 		_camera->updateMatrices();

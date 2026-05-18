@@ -9,6 +9,7 @@
 #include "GuiUtilities.h"
 #include "ImGuiFileDialog.h"
 #include "InputManager.h"
+#include "Renderer.h"
 #include <chrono>
 
 AlgGeom::GUI::GUI()
@@ -23,6 +24,8 @@ AlgGeom::GUI::GUI()
 
 	_showMenuButtons = new bool[NUM_GUI_MENU_BUTTONS];
 	for (int idx = 0; idx < NUM_GUI_MENU_BUTTONS; ++idx) _showMenuButtons[idx] = false;
+	_showMenuButtons[MenuButtons::MODELS] = true;
+	_showMenuButtons[MenuButtons::RENDERING] = true;
 }
 
 AlgGeom::GUI::~GUI()
@@ -87,7 +90,85 @@ void AlgGeom::GUI::loadFonts()
 
 void AlgGeom::GUI::loadImGUIStyle()
 {
-	ImGui::StyleColorsDark();
+	ImGuiStyle& style = ImGui::GetStyle();
+	ImVec4* colors = style.Colors;
+
+	// Fondo general muy oscuro (estilo Blender)
+	colors[ImGuiCol_WindowBg]             = ImVec4(0.15f, 0.15f, 0.15f, 1.00f);
+	colors[ImGuiCol_ChildBg]              = ImVec4(0.13f, 0.13f, 0.13f, 1.00f);
+	colors[ImGuiCol_PopupBg]              = ImVec4(0.18f, 0.18f, 0.18f, 0.94f);
+	colors[ImGuiCol_Border]               = ImVec4(0.25f, 0.25f, 0.25f, 0.50f);
+	colors[ImGuiCol_BorderShadow]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+
+	// Headers naranja
+	colors[ImGuiCol_Header]               = ImVec4(0.90f, 0.55f, 0.15f, 0.55f);
+	colors[ImGuiCol_HeaderHovered]        = ImVec4(1.00f, 0.65f, 0.20f, 0.80f);
+	colors[ImGuiCol_HeaderActive]         = ImVec4(0.95f, 0.60f, 0.15f, 1.00f);
+
+	// Botones naranja oscuro
+	colors[ImGuiCol_Button]               = ImVec4(0.80f, 0.45f, 0.10f, 0.80f);
+	colors[ImGuiCol_ButtonHovered]        = ImVec4(0.95f, 0.55f, 0.15f, 1.00f);
+	colors[ImGuiCol_ButtonActive]         = ImVec4(1.00f, 0.65f, 0.20f, 1.00f);
+
+	// Frames
+	colors[ImGuiCol_FrameBg]              = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+	colors[ImGuiCol_FrameBgHovered]       = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
+	colors[ImGuiCol_FrameBgActive]        = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
+
+	// Tabs
+	colors[ImGuiCol_Tab]                  = ImVec4(0.20f, 0.20f, 0.20f, 0.86f);
+	colors[ImGuiCol_TabHovered]           = ImVec4(0.90f, 0.55f, 0.15f, 0.80f);
+	colors[ImGuiCol_TabActive]            = ImVec4(0.85f, 0.50f, 0.12f, 1.00f);
+	colors[ImGuiCol_TabUnfocused]         = ImVec4(0.15f, 0.15f, 0.15f, 0.97f);
+	colors[ImGuiCol_TabUnfocusedActive]   = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
+
+	// Texto
+	colors[ImGuiCol_Text]                 = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+	colors[ImGuiCol_TextDisabled]         = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+	colors[ImGuiCol_TextSelectedBg]       = ImVec4(0.90f, 0.55f, 0.15f, 0.35f);
+
+	// Title
+	colors[ImGuiCol_TitleBg]              = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
+	colors[ImGuiCol_TitleBgActive]        = ImVec4(0.90f, 0.55f, 0.15f, 1.00f);
+	colors[ImGuiCol_TitleBgCollapsed]     = ImVec4(0.12f, 0.12f, 0.12f, 0.51f);
+
+	// Misc
+	colors[ImGuiCol_CheckMark]            = ImVec4(0.95f, 0.60f, 0.15f, 1.00f);
+	colors[ImGuiCol_SliderGrab]           = ImVec4(0.90f, 0.55f, 0.15f, 1.00f);
+	colors[ImGuiCol_SliderGrabActive]     = ImVec4(1.00f, 0.65f, 0.20f, 1.00f);
+	colors[ImGuiCol_Separator]            = ImVec4(0.30f, 0.30f, 0.30f, 0.50f);
+	colors[ImGuiCol_SeparatorHovered]     = ImVec4(0.90f, 0.55f, 0.15f, 0.78f);
+	colors[ImGuiCol_SeparatorActive]      = ImVec4(0.95f, 0.60f, 0.15f, 1.00f);
+	colors[ImGuiCol_ResizeGrip]           = ImVec4(0.90f, 0.55f, 0.15f, 0.20f);
+	colors[ImGuiCol_ResizeGripHovered]    = ImVec4(0.95f, 0.60f, 0.15f, 0.67f);
+	colors[ImGuiCol_ResizeGripActive]     = ImVec4(1.00f, 0.65f, 0.20f, 0.95f);
+	colors[ImGuiCol_DragDropTarget]       = ImVec4(0.95f, 0.60f, 0.15f, 0.90f);
+	colors[ImGuiCol_NavHighlight]         = ImVec4(0.90f, 0.55f, 0.15f, 1.00f);
+	colors[ImGuiCol_NavWindowingHighlight]= ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+	colors[ImGuiCol_NavWindowingDimBg]    = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+	colors[ImGuiCol_ModalWindowDimBg]     = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+	colors[ImGuiCol_ScrollbarBg]          = ImVec4(0.10f, 0.10f, 0.10f, 0.53f);
+	colors[ImGuiCol_ScrollbarGrab]        = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabActive]  = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+	colors[ImGuiCol_PlotLines]            = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+	colors[ImGuiCol_PlotLinesHovered]     = ImVec4(1.00f, 0.80f, 0.20f, 1.00f);
+	colors[ImGuiCol_PlotHistogram]        = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+	colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.80f, 0.20f, 1.00f);
+
+	// Redondeo y padding
+	style.WindowRounding    = 4.0f;
+	style.ChildRounding     = 4.0f;
+	style.FrameRounding     = 4.0f;
+	style.GrabRounding      = 3.0f;
+	style.TabRounding       = 4.0f;
+	style.PopupRounding     = 4.0f;
+	style.ScrollbarRounding = 4.0f;
+	style.WindowPadding     = ImVec2(10, 10);
+	style.FramePadding      = ImVec2(6, 4);
+	style.ItemSpacing       = ImVec2(8, 6);
+	style.ItemInnerSpacing  = ImVec2(6, 4);
+
 	this->loadFonts();
 }
 
@@ -225,13 +306,10 @@ void AlgGeom::GUI::render(SceneContent* sceneContent)
 
 	if (ImGui::BeginMainMenuBar())
 	{
-		if (ImGui::BeginMenu(ICON_FA_COG "Settings"))
+		if (ImGui::BeginMenu(ICON_FA_COG " Ventanas"))
 		{
-			ImGui::MenuItem(ICON_FA_DRAW_POLYGON "Rendering", NULL, &_showMenuButtons[MenuButtons::RENDERING]);
-			ImGui::MenuItem(ICON_FA_CUBE "Models", NULL, &_showMenuButtons[MenuButtons::MODELS]);
-			ImGui::MenuItem(ICON_FA_CAMERA_RETRO "Camera", NULL, &_showMenuButtons[MenuButtons::CAMERA]);
-			ImGui::MenuItem(ICON_FA_LIGHTBULB "Light", NULL, &_showMenuButtons[MenuButtons::LIGHT]);
-			ImGui::MenuItem(ICON_FA_CAMERA "Screenshot", NULL, &_showMenuButtons[MenuButtons::SCREENSHOT]);
+			ImGui::MenuItem(ICON_FA_CUBE " Proyecto Final", NULL, &_showMenuButtons[MenuButtons::MODELS]);
+			ImGui::MenuItem(ICON_FA_DRAW_POLYGON " Rendering", NULL, &_showMenuButtons[MenuButtons::RENDERING]);
 			ImGui::EndMenu();
 		}
 
@@ -340,144 +418,36 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 {
 	ImGui::SetNextWindowSize(ImVec2(800, 440), ImGuiCond_FirstUseEver);
 
-	if (ImGui::Begin("Models", &this->_showMenuButtons[MenuButtons::MODELS], ImGuiWindowFlags_None))
+	if (ImGui::Begin("Proyecto Final - Booleanas CGAL", &this->_showMenuButtons[MenuButtons::MODELS], ImGuiWindowFlags_None))
 	{
-		if (ImGui::Button("Open Model"))
-		{
-			_fileDialog = FileDialog::OPEN_MESH;
-		}
+		// Botones legacy PR1-PR5 ocultos (codigo preservado)
+#if 0
+		ImGui::SameLine();
+		if (ImGui::Button("PR1 A")) { sceneContent->clearScene(); sceneContent->buildPr1a(); _modelCompSelected = nullptr; }
+		ImGui::SameLine();
+		if (ImGui::Button("PR1 B")) { sceneContent->clearScene(); sceneContent->buildPr1b(); _modelCompSelected = nullptr; }
+		ImGui::SameLine();
+		if (ImGui::Button("PR2 A")) { sceneContent->clearScene(); sceneContent->buildPr2a(); _modelCompSelected = nullptr; }
+		ImGui::SameLine();
+		if (ImGui::Button("PR2 B")) { sceneContent->clearScene(); sceneContent->buildPr2b(); _modelCompSelected = nullptr; }
+		ImGui::SameLine();
+		if (ImGui::Button("PR2 C")) { sceneContent->clearScene(); sceneContent->buildPr2c(); _modelCompSelected = nullptr; }
+		ImGui::SameLine();
+		if (ImGui::Button("PR2 D")) { sceneContent->clearScene(); sceneContent->buildPr2d(); _modelCompSelected = nullptr; }
+		ImGui::SameLine();
+		if (ImGui::Button("Delaunay")) { sceneContent->clearScene(); sceneContent->buildDelaunay(); _modelCompSelected = nullptr; }
+		ImGui::SameLine();
+		if (ImGui::Button("PR3 A")) { /* ... */ }
+		ImGui::SameLine();
+		if (ImGui::Button("PR4B")) { /* ... */ }
+		ImGui::SameLine();
+		if (ImGui::Button("Nube PR5")) { sceneContent->generateCloudPr5(); _modelCompSelected = nullptr; }
+		ImGui::SameLine();
+		if (ImGui::Button("Modelo PR5")) { /* ... */ }
+#endif
 
 		ImGui::SameLine();
-		if (ImGui::Button("Open Model B"))
-		{
-			_fileDialog = FileDialog::OPEN_MESH_B;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("PR1 A"))
-		{
-			sceneContent->clearScene();
-			sceneContent->buildPr1a();
-			_modelCompSelected = nullptr;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("PR1 B"))
-		{
-			sceneContent->clearScene();
-			sceneContent->buildPr1b();
-			_modelCompSelected = nullptr;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("PR2 A"))
-		{
-			sceneContent->clearScene();
-			sceneContent->buildPr2a();
-			_modelCompSelected = nullptr;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("PR2 B"))
-		{
-			sceneContent->clearScene();
-			sceneContent->buildPr2b();
-			_modelCompSelected = nullptr;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("PR2 C"))
-		{
-			sceneContent->clearScene();
-			sceneContent->buildPr2c();
-			_modelCompSelected = nullptr;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("PR2 D"))
-		{
-			sceneContent->clearScene();
-			sceneContent->buildPr2d();
-			_modelCompSelected = nullptr;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("Delaunay"))
-		{
-			sceneContent->clearScene();
-			sceneContent->buildDelaunay();
-			_modelCompSelected = nullptr;
-		}
-
-		static bool showOctreeWhite = true;
-		static bool showOctreeGrey = true;
-		static bool showOctreeBlack = true;
-		static bool showMesh = true;
-
-		ImGui::SameLine();
-		if (ImGui::Button("PR3 A"))
-		{
-			if (sceneContent->_currentModelPath.empty())
-			{
-				std::cout << "Por favor, cargue un modelo antes de ejecutar la practica 3." << std::endl;
-			}
-			else
-			{
-				std::string currentPath = sceneContent->_currentModelPath;
-				sceneContent->clearScene();
-				sceneContent->_currentModelPath = currentPath;
-				sceneContent->buildPr3a();
-				_modelCompSelected = nullptr;
-				
-				showOctreeWhite = true;
-				showOctreeGrey = true;
-				showOctreeBlack = true;
-				showMesh = true;
-			}
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("PR4B"))
-		{
-			if (sceneContent->_drawA_ref == nullptr || sceneContent->_drawB_ref == nullptr)
-			{
-				std::cout << "Por favor, cargue dos modelos (Open Model y Open Model B) antes de ejecutar la practica 4." << std::endl;
-			}
-			else
-			{
-				sceneContent->buildPr4();
-				_modelCompSelected = nullptr;
-				
-				showOctreeWhite = true;
-				showOctreeGrey = true;
-				showOctreeBlack = true;
-				showMesh = true;
-			}
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("Nube PR5"))
-		{
-			sceneContent->generateCloudPr5();
-			_modelCompSelected = nullptr;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("Modelo PR5"))
-		{
-			if (sceneContent->_drawA_ref == nullptr)
-			{
-				std::cout << "Cargue un modelo (Open Model) antes de extraer la nube." << std::endl;
-			}
-			else
-			{
-				sceneContent->extractCloudFromModel();
-				_modelCompSelected = nullptr;
-			}
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Button("PR6 Booleanas"))
+		if (ImGui::Button("PROYECTO FINAL"))
 		{
 			sceneContent->clearScene();
 			sceneContent->buildPr6();
@@ -491,36 +461,10 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			_modelCompSelected = nullptr;
 		}
 
-        // Panel de ejecución y filtros si la PR5 está preparada
-        if (sceneContent->_isPr5Active) {
-            ImGui::Separator();
-            ImGui::TextColored(ImVec4(1, 1, 0, 1), "EJECUCION PR5:");
-            
-            if (ImGui::Button("Ejecutar Lento (O(n2))")) {
-                sceneContent->runCH_Lento();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Ejecutar Optimo (O(n))")) {
-                sceneContent->runCH_Opt();
-            }
-
-            ImGui::Spacing();
-            ImGui::Text("Filtros Pr5:");
-            ImGui::Checkbox("Wireframe", &sceneContent->_pr5Wireframe);
-            ImGui::SameLine();
-            ImGui::PushItemWidth(200);
-            if (ImGui::SliderInt("Puntos Nube", &sceneContent->_numPointsPr5, 10, 10000)) {
-                sceneContent->generateCloudPr5();
-            }
-            ImGui::SliderInt("Velocidad (ms)", &sceneContent->_pr5SpeedMs, 50, 2000);
-            ImGui::PopItemWidth();
-            ImGui::Separator();
-        }
-
-        // Panel de ejecucion y filtros si la PR6 esta preparada
+        // Panel de ejecucion del Proyecto Final (PR6)
         if (sceneContent->_isPr6Active) {
             ImGui::Separator();
-            ImGui::TextColored(ImVec4(1, 1, 0, 1), "EJECUCION PR6 - Booleanas CGAL:");
+            ImGui::TextColored(ImVec4(1.0f, 0.65f, 0.20f, 1.0f), "PROYECTO FINAL - Operaciones Booleanas CGAL");
 
             if (ImGui::Button("Cargar Modelo A")) {
                 _fileDialog = FileDialog::OPEN_BOOL_A;
@@ -530,7 +474,7 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
                 _fileDialog = FileDialog::OPEN_BOOL_B;
             }
             ImGui::SameLine();
-            if (ImGui::Button("Limpiar PR6")) {
+            if (ImGui::Button("Limpiar Proyecto")) {
                 sceneContent->clearBooleanScene();
                 _modelCompSelected = nullptr;
             }
@@ -609,8 +553,14 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
                 _modelCompSelected = nullptr;
             }
             ImGui::SameLine();
-            if (ImGui::Button("Guardar resultado .obj")) {
-                _fileDialog = FileDialog::SAVE_BOOL_RESULT;
+            static char saveName[128] = "resultado";
+            ImGui::PushItemWidth(120);
+            ImGui::InputText("##saveName", saveName, IM_ARRAYSIZE(saveName));
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            if (ImGui::Button("Guardar .obj")) {
+                std::string outPath = std::string(saveName) + ".obj";
+                sceneContent->saveBooleanResult(outPath);
             }
 
             if (sceneContent->_cgalBool && sceneContent->_cgalBool->hasResult()) {
@@ -625,63 +575,6 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 
 		GuiUtilities::leaveSpace(1);
 
-		ImGui::Text("Filtros Pr4");
-		ImGui::Separator();
-		if (sceneContent->_isPr4Active) {
-		    if (ImGui::Checkbox("Cajas Amarillas", &sceneContent->_showYellowBoxes)) {
-		        if (sceneContent->_pr4_boxesA) sceneContent->_pr4_boxesA->setVisibility(sceneContent->_showYellowBoxes);
-		        if (sceneContent->_pr4_boxesB) sceneContent->_pr4_boxesB->setVisibility(sceneContent->_showYellowBoxes);
-		    }
-		    if (ImGui::Checkbox("Triangulos Rojos", &sceneContent->_showRedTriangles)) {
-		        if (sceneContent->_pr4_reds)   sceneContent->_pr4_reds->setVisibility(sceneContent->_showRedTriangles);
-		        if (sceneContent->_pr4_redsB)  sceneContent->_pr4_redsB->setVisibility(sceneContent->_showRedTriangles);
-		    }
-		    if (ImGui::Checkbox("Test Fuerza Bruta", &sceneContent->_isBruteForceActive)) {
-		        if (sceneContent->_isBruteForceActive) {
-		            std::cout << "\n--- Ejecutando Comparativa (Paso 7) ---" << std::endl;
-		            sceneContent->runPr4BruteForce();
-		        }
-		    }
-		}
-
-		GuiUtilities::leaveSpace(1);
-
-		ImGui::Text("Filtros Pr3A");
-		ImGui::Separator();
-		bool filtersChanged = false;
-		if (ImGui::Checkbox("Ver Modelo", &showMesh)) filtersChanged = true;
-		ImGui::SameLine();
-		if (ImGui::Checkbox("AABB Blancos", &showOctreeWhite)) filtersChanged = true;
-		ImGui::SameLine();
-		if (ImGui::Checkbox("AABB Grises", &showOctreeGrey)) filtersChanged = true;
-		ImGui::SameLine();
-		if (ImGui::Checkbox("AABB Negros", &showOctreeBlack)) filtersChanged = true;
-
-		if (filtersChanged)
-		{
-			for (size_t modelIdx = 0; modelIdx < sceneContent->_model.size(); ++modelIdx)
-			{
-				auto& model = sceneContent->_model[modelIdx];
-				if (model->getName().find("DrawMesh") != std::string::npos)
-				{
-					for (auto& comp : model->_components)
-					{
-						comp->_enabled = showMesh;
-					}
-				}
-				else if (model->getName().find("DrawOctree") != std::string::npos)
-				{
-					for (auto& comp : model->_components)
-					{
-						if (comp->_material._lineColor == vec3(1.0f, 1.0f, 1.0f)) comp->_enabled = showOctreeWhite;
-						else if (comp->_material._lineColor == vec3(0.5f, 0.5f, 0.5f)) comp->_enabled = showOctreeGrey;
-						else if (comp->_material._lineColor == vec3(0.0f, 0.0f, 0.0f)) comp->_enabled = showOctreeBlack;
-					}
-				}
-			}
-		}
-
-		GuiUtilities::leaveSpace(2);
 		ImGui::BeginChild("Components", ImVec2(200, 0), true);
 
 		bool isSelectedValid = false;
@@ -722,6 +615,16 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 
 			ImGui::Checkbox("Enabled", &_modelCompSelected->_enabled);
 
+			Model3D* parentModel = sceneContent->getModel(_modelCompSelected);
+			if (parentModel)
+			{
+				if (ImGui::Button("Centrar camara en modelo"))
+				{
+					Camera* camera = Renderer::getInstance()->getCamera();
+					if (camera) camera->track(parentModel);
+				}
+			}
+
 			GuiUtilities::leaveSpace(4);
 			ImGui::Text("Material");
 			ImGui::Separator();
@@ -753,6 +656,38 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 			ImGui::Separator();
 
 			this->editTransform(_currentGizmoOperation, _currentGizmoMode);
+
+			GuiUtilities::leaveSpace(2);
+			ImGui::Text("Transformacion Numerica");
+			ImGui::Separator();
+
+			Model3D* model = sceneContent->getModel(_modelCompSelected);
+			if (model)
+			{
+				mat4 m = model->getModelMatrix();
+				vec3 translation = vec3(m[3]);
+				vec3 scale = vec3(glm::length(vec3(m[0])), glm::length(vec3(m[1])), glm::length(vec3(m[2])));
+
+				glm::quat rotation;
+				vec3 skew;
+				vec4 perspective;
+				glm::decompose(m, scale, rotation, translation, skew, perspective);
+				vec3 euler = glm::eulerAngles(rotation);
+
+				bool changed = false;
+				vec3 eulerDeg = glm::degrees(euler);
+				changed |= ImGui::InputFloat3("Traslacion", &translation[0]);
+				changed |= ImGui::InputFloat3("Rotacion (grados)", &eulerDeg[0]);
+				changed |= ImGui::InputFloat3("Escala", &scale[0]);
+
+				if (changed)
+				{
+					mat4 newMatrix = glm::translate(mat4(1.0f), translation)
+					               * glm::mat4_cast(glm::quat(glm::radians(eulerDeg)))
+					               * glm::scale(mat4(1.0f), scale);
+					model->setModelMatrix(newMatrix);
+				}
+			}
 		}
 
 		ImGui::EndChild();
@@ -764,33 +699,70 @@ void AlgGeom::GUI::showModelMenu(SceneContent* sceneContent)
 
 void AlgGeom::GUI::showRenderingMenu(SceneContent* sceneContent)
 {
-	if (ImGui::Begin("Rendering Settings", &_showMenuButtons[RENDERING]))
+	if (ImGui::Begin("Rendering", &_showMenuButtons[RENDERING]))
 	{
 		ImGui::ColorEdit3("Background color", &_appState->_backgroundColor[0]);
 		ImGui::SliderFloat("Gamma", &_appState->_gamma, 1.0f, 5.0f);
 
-		GuiUtilities::leaveSpace(3);
+		GuiUtilities::leaveSpace(2);
+		ImGui::Text("Colores globales");
+		ImGui::Separator();
 
-		if (ImGui::BeginTabBar("Rendering Tab Bar"))
+		bool globalColorChanged = false;
+		globalColorChanged |= ImGui::ColorEdit3("Wireframe", &_appState->_globalWireframeColor[0]);
+		globalColorChanged |= ImGui::ColorEdit4("Triangulos / Material", &_appState->_globalTriangleColor[0]);
+		globalColorChanged |= ImGui::ColorEdit3("Nube de puntos", &_appState->_globalPointColor[0]);
+		globalColorChanged |= ImGui::SliderFloat("Grosor linea", &_appState->_globalLineWidth, 0.1f, 10.0f);
+		globalColorChanged |= ImGui::SliderFloat("Tamaño puntos", &_appState->_globalPointSize, 0.1f, 20.0f);
+
+		if (globalColorChanged && sceneContent)
 		{
-			if (ImGui::BeginTabItem("Texture"))
+			for (auto& model : sceneContent->_model)
 			{
-				GuiUtilities::leaveSpace(1);
-
-				ImGui::Text(ICON_FA_NETWORK_WIRED "Topology");
-				ImGui::Separator();
-				
-				static const char* topologyTitle[] = { "Point Cloud", "Wireframe", "Triangle Mesh"};
-				for (int topologyIdx = 0; topologyIdx < VAO::NUM_IBOS; ++topologyIdx)
-				{
-					ImGui::Checkbox(topologyTitle[topologyIdx], &_appState->_activeRendering[topologyIdx]);
-				}
-
-				ImGui::EndTabItem();
+				model->setLineColor(_appState->_globalWireframeColor);
+				model->setTriangleColor(_appState->_globalTriangleColor);
+				model->setPointColor(_appState->_globalPointColor);
+				model->setLineWidth(_appState->_globalLineWidth);
+				model->setPointSize(_appState->_globalPointSize);
 			}
-
-			ImGui::EndTabBar();
 		}
+
+		GuiUtilities::leaveSpace(2);
+		ImGui::Text("Topologia global");
+		ImGui::Separator();
+
+		static const char* topologyTitle[] = { "Point Cloud", "Wireframe", "Triangle Mesh" };
+		for (int topologyIdx = 0; topologyIdx < VAO::NUM_IBOS; ++topologyIdx)
+		{
+			ImGui::Checkbox(topologyTitle[topologyIdx], &_appState->_activeRendering[topologyIdx]);
+		}
+
+		GuiUtilities::leaveSpace(2);
+		ImGui::Text("Camara");
+		ImGui::Separator();
+
+		Camera* camera = sceneContent->_camera[_appState->_selectedCamera].get();
+		if (camera)
+		{
+			float zNear = camera->getZNear();
+			float zFar = camera->getZFar();
+			if (ImGui::SliderFloat("Z Near", &zNear, 0.001f, 10.0f)) camera->setZNear(zNear);
+			if (ImGui::SliderFloat("Z Far", &zFar, 10.0f, 5000.0f)) camera->setZFar(zFar);
+
+			if (ImGui::Button("Reset Camara"))
+			{
+				camera->reset();
+			}
+		}
+
+		GuiUtilities::leaveSpace(2);
+		ImGui::Text("Controles de teclado");
+		ImGui::Separator();
+		ImGui::Text("WASD + Click Dcho: avanzar/retroceder/strafe");
+		ImGui::Text("Q / E: subir / bajar");
+		ImGui::Text("Scroll: zoom");
+		ImGui::Text("T / R / S: gizmo translate/rotate/scale");
+		ImGui::Text("0 / 1 / 2: toggle puntos/alambres/triangulos");
 	}
 
 	ImGui::End();

@@ -32,7 +32,7 @@ namespace AlgGeom
 			vec3		_pointColor;
 			vec3		_lineColor;
 
-			Material() : _kdColor(1.00, 0.81, 0.29, 1.0f), _ksColor(.5f), _metallic(.7f), _roughnessK(.3f), _kadTexture(nullptr), _useUniformColor(true), _pointColor(.0f), _lineColor(.0f) {}
+			Material() : _kdColor(1.0f, 0.5f, 0.0f, 1.0f), _ksColor(.5f), _metallic(.7f), _roughnessK(.3f), _kadTexture(nullptr), _useUniformColor(true), _pointColor(1.0f), _lineColor(1.0f) {}
 		};
 
 	public:

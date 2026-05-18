@@ -6,6 +6,27 @@
 #include <chrono>
 #include <array>
 #include <optional>
+#include <CGAL/Polygon_mesh_processing/repair.h>
+
+static void repairAndOrientMesh(CgalBooleanOperations::SurfaceMesh& mesh)
+{
+    PMP::remove_isolated_vertices(mesh);
+    if (CGAL::is_closed(mesh) && CGAL::is_triangle_mesh(mesh))
+    {
+        try
+        {
+            if (!PMP::is_outward_oriented(mesh))
+            {
+                std::cout << "[CgalBoolean] Orientacion inward detectada. Invirtiendo caras..." << std::endl;
+                PMP::reverse_face_orientations(mesh);
+            }
+        }
+        catch (...)
+        {
+            // Si la orientacion no puede determinarse, continuamos sin cambios
+        }
+    }
+}
 
 static bool areMeshesIdentical(const CgalBooleanOperations::SurfaceMesh& a, const CgalBooleanOperations::SurfaceMesh& b)
 {
@@ -204,6 +225,21 @@ bool CgalBooleanOperations::loadModelA(const std::string& path)
     else if (path.size() > 4 && path.substr(path.size() - 4) == ".obj")
     {
         _hasA = loadOBJToSurfaceMesh(path, _meshA);
+        if (!_hasA)
+        {
+            std::cout << "[CgalBoolean] Fallback a Assimp para OBJ..." << std::endl;
+            try
+            {
+                TriangleModel tm(path);
+                _meshA = triangleModelToSurfaceMesh(tm);
+                _hasA = _meshA.number_of_vertices() > 0;
+            }
+            catch (...)
+            {
+                std::cerr << "[CgalBoolean] Error cargando modelo A: " << path << std::endl;
+                _hasA = false;
+            }
+        }
     }
     else
     {
@@ -222,12 +258,18 @@ bool CgalBooleanOperations::loadModelA(const std::string& path)
 
     if (_hasA)
     {
+        repairAndOrientMesh(_meshA);
         _meshA_orig = _meshA;
+        _validA = isValidForBoolean(_meshA);
         std::cout << "[CgalBoolean] Modelo A cargado: " << _meshA.number_of_vertices() << " vertices, " << _meshA.number_of_faces() << " caras." << std::endl;
-        if (isValidForBoolean(_meshA))
+        if (_validA)
             std::cout << "[CgalBoolean] Modelo A es VALIDO (cerrado y triangulado)." << std::endl;
         else
             std::cerr << "[CgalBoolean] Modelo A NO es valido: debe ser malla cerrada y triangulada sin agujeros." << std::endl;
+    }
+    else
+    {
+        _validA = false;
     }
     return _hasA;
 }
@@ -245,6 +287,21 @@ bool CgalBooleanOperations::loadModelB(const std::string& path)
     else if (path.size() > 4 && path.substr(path.size() - 4) == ".obj")
     {
         _hasB = loadOBJToSurfaceMesh(path, _meshB);
+        if (!_hasB)
+        {
+            std::cout << "[CgalBoolean] Fallback a Assimp para OBJ..." << std::endl;
+            try
+            {
+                TriangleModel tm(path);
+                _meshB = triangleModelToSurfaceMesh(tm);
+                _hasB = _meshB.number_of_vertices() > 0;
+            }
+            catch (...)
+            {
+                std::cerr << "[CgalBoolean] Error cargando modelo B: " << path << std::endl;
+                _hasB = false;
+            }
+        }
     }
     else
     {
@@ -263,12 +320,18 @@ bool CgalBooleanOperations::loadModelB(const std::string& path)
 
     if (_hasB)
     {
+        repairAndOrientMesh(_meshB);
         _meshB_orig = _meshB;
+        _validB = isValidForBoolean(_meshB);
         std::cout << "[CgalBoolean] Modelo B cargado: " << _meshB.number_of_vertices() << " vertices, " << _meshB.number_of_faces() << " caras." << std::endl;
-        if (isValidForBoolean(_meshB))
+        if (_validB)
             std::cout << "[CgalBoolean] Modelo B es VALIDO (cerrado y triangulado)." << std::endl;
         else
             std::cerr << "[CgalBoolean] Modelo B NO es valido: debe ser malla cerrada y triangulada sin agujeros." << std::endl;
+    }
+    else
+    {
+        _validB = false;
     }
     return _hasB;
 }
@@ -277,7 +340,8 @@ bool CgalBooleanOperations::setModelA(TriangleModel& model)
 {
     _meshA = triangleModelToSurfaceMesh(model);
     _hasA = _meshA.number_of_vertices() > 0;
-    if (_hasA && !isValidForBoolean(_meshA))
+    _validA = _hasA && isValidForBoolean(_meshA);
+    if (_hasA && !_validA)
     {
         std::cerr << "[CgalBoolean] Advertencia: Modelo A no es una malla cerrada/triangulada." << std::endl;
     }
@@ -288,11 +352,29 @@ bool CgalBooleanOperations::setModelB(TriangleModel& model)
 {
     _meshB = triangleModelToSurfaceMesh(model);
     _hasB = _meshB.number_of_vertices() > 0;
-    if (_hasB && !isValidForBoolean(_meshB))
+    _validB = _hasB && isValidForBoolean(_meshB);
+    if (_hasB && !_validB)
     {
         std::cerr << "[CgalBoolean] Advertencia: Modelo B no es una malla cerrada/triangulada." << std::endl;
     }
     return _hasB;
+}
+
+static void logBooleanException(const char* opName, const std::exception& e)
+{
+    std::string msg = e.what();
+    std::cerr << "[CgalBoolean] Excepcion en " << opName << ": " << msg << std::endl;
+    if (msg.find("Unauthorized intersections") != std::string::npos)
+    {
+        std::cerr << "[CgalBoolean] >> Las mallas tienen intersecciones no manejables (caras coplanarias," << std::endl;
+        std::cerr << "[CgalBoolean] >> aristas tangentes, o vertices muy cercanos). Prueba a mover" << std::endl;
+        std::cerr << "[CgalBoolean] >> uno de los modelos ligeramente o usa geometria mas simple." << std::endl;
+    }
+    else if (msg.find("assertion violation") != std::string::npos)
+    {
+        std::cerr << "[CgalBoolean] >> Violacion de asercion interna de CGAL. Posiblemente los modelos" << std::endl;
+        std::cerr << "[CgalBoolean] >> son demasiado complejos o tienen degeneraciones." << std::endl;
+    }
 }
 
 bool CgalBooleanOperations::computeUnion()
@@ -338,7 +420,7 @@ bool CgalBooleanOperations::computeUnion()
     }
     catch (const std::exception& e)
     {
-        std::cerr << "[CgalBoolean] Excepción en corefine_and_compute_boolean_operations: " << e.what() << std::endl;
+        logBooleanException("corefine_and_compute_boolean_operations (Union)", e);
         return false;
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -409,7 +491,7 @@ bool CgalBooleanOperations::computeIntersection()
     }
     catch (const std::exception& e)
     {
-        std::cerr << "[CgalBoolean] Excepción en corefine_and_compute_boolean_operations: " << e.what() << std::endl;
+        logBooleanException("corefine_and_compute_boolean_operations (Interseccion)", e);
         return false;
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -480,7 +562,7 @@ bool CgalBooleanOperations::computeDifferenceAB()
     }
     catch (const std::exception& e)
     {
-        std::cerr << "[CgalBoolean] Excepción en corefine_and_compute_boolean_operations: " << e.what() << std::endl;
+        logBooleanException("corefine_and_compute_boolean_operations (Diferencia A-B)", e);
         return false;
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -551,7 +633,7 @@ bool CgalBooleanOperations::computeDifferenceBA()
     }
     catch (const std::exception& e)
     {
-        std::cerr << "[CgalBoolean] Excepción en corefine_and_compute_boolean_operations: " << e.what() << std::endl;
+        logBooleanException("corefine_and_compute_boolean_operations (Diferencia B-A)", e);
         return false;
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -641,16 +723,45 @@ TriangleModel* CgalBooleanOperations::exportResultToTriangleModel() const
         return nullptr;
     }
 
-    std::vector<Triangle3d> triangles;
-    surfaceMeshToTriangleModel(_result, triangles);
+    // Construir directamente vertices e indices sin pasar por Triangle3d (evita deduplicacion O(n^2))
+    std::vector<Vect3d> verts;
+    std::vector<unsigned> idxs;
+    verts.reserve(_result.number_of_vertices());
+    idxs.reserve(_result.number_of_faces() * 3);
 
-    if (triangles.empty())
+    std::unordered_map<SurfaceMesh::Vertex_index, unsigned> vertexIndexMap;
+    unsigned idx = 0;
+    for (auto v : _result.vertices())
     {
-        std::cerr << "[CgalBoolean] El resultado no contiene triángulos." << std::endl;
+        Point_3 p = _result.point(v);
+        verts.emplace_back(p.x(), p.y(), p.z());
+        vertexIndexMap[v] = idx++;
+    }
+
+    for (auto f : _result.faces())
+    {
+        std::vector<unsigned> vidx;
+        for (auto v : CGAL::vertices_around_face(_result.halfedge(f), _result))
+        {
+            auto it = vertexIndexMap.find(v);
+            if (it != vertexIndexMap.end())
+                vidx.push_back(it->second);
+        }
+        if (vidx.size() == 3)
+        {
+            idxs.push_back(vidx[0]);
+            idxs.push_back(vidx[1]);
+            idxs.push_back(vidx[2]);
+        }
+    }
+
+    if (verts.empty() || idxs.empty())
+    {
+        std::cerr << "[CgalBoolean] El resultado no contiene triangulos." << std::endl;
         return nullptr;
     }
 
-    return new TriangleModel(triangles);
+    return new TriangleModel(std::move(verts), std::move(idxs));
 }
 
 bool CgalBooleanOperations::saveResultToOBJ(const std::string& path) const

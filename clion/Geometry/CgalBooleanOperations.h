@@ -35,6 +35,8 @@ private:
     bool _hasA = false;
     bool _hasB = false;
     bool _hasResult = false;
+    bool _validA = false;
+    bool _validB = false;
 
     static SurfaceMesh triangleModelToSurfaceMesh(TriangleModel& model);
     static void surfaceMeshToTriangleModel(const SurfaceMesh& mesh, std::vector<Triangle3d>& outTriangles);
@@ -54,8 +56,8 @@ public:
 
     // Verificación
     static bool isValidForBoolean(const SurfaceMesh& mesh);
-    bool isValidA() const { return _hasA && isValidForBoolean(_meshA); }
-    bool isValidB() const { return _hasB && isValidForBoolean(_meshB); }
+    bool isValidA() const { return _hasA && _validA; }
+    bool isValidB() const { return _hasB && _validB; }
 
     // Aplicar transformaciones visuales antes de ejecutar operaciones
     void applyModelMatrixToMeshes(const mat4& matA, const mat4& matB);
